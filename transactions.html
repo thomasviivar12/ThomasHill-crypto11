@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus | Transactions</title>
+<link rel="icon" type="Image/png" href="logo/nexus_logo-only.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080810;--bg2:#0d0d1a;--bg3:#11121f;
+  --text:#e2e8f0;--muted:#8b95ac;--cyan:#00e5ff;--purple:#a855f7;
+  --green:#22c55e;--red:#ef4444;--border:rgba(255,255,255,0.08);
+}
+body{font-family:'Inter',sans-serif;background:linear-gradient(180deg,#05050b 0%,#0a0b18 100%);color:var(--text);min-height:100vh;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;position:sticky;top:0;background:rgba(8,8,16,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;font-weight:800;text-decoration:none;font-size:1.1rem;}
+.logo-box{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:800;color:#000;font-size:1rem;}
+.nav-links{display:flex;gap:24px;align-items:center;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:0.92rem;transition:color 0.2s;}
+.nav-links a:hover{color:#fff;}
+.nav-status{display:flex;gap:12px;align-items:center;font-size:0.9rem;color:var(--muted);}
+.nav-status span{padding:10px 16px;border:1px solid rgba(255,255,255,0.08);border-radius:999px;}
+.logout-btn{padding:10px 16px;border:none;border-radius:999px;background:rgba(255,255,255,0.1);color:#fff;font-weight:600;cursor:pointer;transition:background 0.2s;font-family:'Inter',sans-serif;}
+.logout-btn:hover{background:rgba(255,255,255,0.18);}
+.page-wrap{max-width:1240px;margin:32px auto;padding:0 24px 60px;}
+.tab-row{display:flex;flex-wrap:wrap;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;justify-content:center;margin-bottom:32px;}
+.tab{padding:10px 18px;border-radius:12px;color:var(--muted);text-decoration:none;font-size:0.92rem;transition:all 0.2s;}
+.tab.active,.tab:hover{background:rgba(255,255,255,0.06);color:#fff;}
+.summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+.summary-card{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:16px;padding:20px 24px;}
+.s-label{font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+.s-val{font-size:1.6rem;font-weight:800;color:#fff;margin-top:6px;}
+.s-sub{font-size:0.8rem;color:var(--muted);margin-top:4px;}
+.panel{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.panel-header{padding:22px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.panel-header h2{font-size:1.1rem;font-weight:700;color:#fff;}
+.filter-row{display:flex;gap:8px;align-items:center;}
+.filter-btn{padding:7px 14px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.82rem;font-family:'Inter',sans-serif;cursor:pointer;transition:all 0.2s;}
+.filter-btn:hover,.filter-btn.active{background:rgba(255,255,255,0.07);color:#fff;border-color:rgba(255,255,255,0.18);}
+.clear-btn{padding:7px 14px;border-radius:10px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.08);color:#f87171;font-size:0.82rem;font-family:'Inter',sans-serif;cursor:pointer;transition:all 0.2s;}
+.clear-btn:hover{background:rgba(239,68,68,0.15);}
+.table-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:14px 20px;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,0.025);}
+tbody td{padding:16px 20px;font-size:0.9rem;color:var(--text);vertical-align:middle;}
+.tx-id{font-family:'Courier New',monospace;font-size:0.8rem;color:var(--muted);}
+.type-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:0.78rem;font-weight:700;}
+.type-deposit{background:rgba(34,197,94,0.12);color:#4ade80;}
+.type-withdraw{background:rgba(239,68,68,0.12);color:#f87171;}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:0.78rem;font-weight:600;}
+.status-pending{background:rgba(245,158,11,0.12);color:#fbbf24;}
+.status-completed{background:rgba(34,197,94,0.12);color:#4ade80;}
+.status-failed{background:rgba(239,68,68,0.12);color:#f87171;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;}
+.hash-cell{font-family:'Courier New',monospace;font-size:0.78rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.coin-cell{display:flex;align-items:center;gap:10px;}
+.coin-cell img{width:24px;height:24px;border-radius:50%;}
+.coin-cell-fb{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;}
+.amount-pos{color:#4ade80;font-weight:700;}
+.amount-neg{color:#f87171;font-weight:700;}
+.empty-state{padding:72px 28px;text-align:center;color:var(--muted);}
+.empty-icon{font-size:3rem;margin-bottom:16px;opacity:0.4;}
+.loading-state{padding:48px 28px;text-align:center;color:var(--muted);font-size:0.9rem;}
+.spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,0.08);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@media(max-width:900px){.summary-row{grid-template-columns:1fr 1fr;}nav{padding:14px 20px;}.nav-links{display:none;}}
+@media(max-width:560px){.summary-row{grid-template-columns:1fr;}.panel-header{flex-direction:column;align-items:flex-start;}}
+
+/* ===== UNIVERSAL TOAST ===== */
+#gToast{position:fixed;top:16px;right:16px;display:flex;align-items:center;gap:10px;padding:13px 18px 13px 14px;border-radius:12px;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:600;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:99999;opacity:0;transform:translateY(-14px) scale(.96);transition:opacity .28s ease,transform .28s ease;pointer-events:none;min-width:220px;max-width:calc(100vw - 32px);}
+#gToast.g-success{background:rgba(5,46,22,.85);border:1px solid rgba(34,197,94,.45);color:#4ade80;}
+#gToast.g-error{background:rgba(69,10,10,.85);border:1px solid rgba(239,68,68,.45);color:#f87171;}
+#gToast.g-info{background:rgba(8,28,60,.85);border:1px solid rgba(99,179,237,.45);color:#93c5fd;}
+#gToast.g-show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+#gToast .g-icon{flex-shrink:0;width:18px;height:18px;}
+#gToast .g-msg{flex:1;line-height:1.4;}
+
+/* ====== SHARED NAV MOBILE ====== */
+@media(max-width:768px){
+  nav{padding:12px 16px!important;height:auto!important;flex-wrap:wrap;gap:8px;}
+  .nav-links{display:none!important;}
+  .logo{font-size:1rem!important;}
+  .logo-box{width:30px!important;height:30px!important;font-size:0.85rem!important;}
+  .nav-status span{padding:8px 12px!important;font-size:0.8rem!important;}
+  .logout-btn{padding:8px 12px!important;font-size:0.82rem!important;}
+  .page-wrap{margin-top:16px!important;padding:0 12px 48px!important;}
+  .tab-row{padding:10px!important;gap:6px!important;border-radius:12px!important;}
+  .tab{padding:8px 12px!important;font-size:0.82rem!important;}
+}
+/* ====== END SHARED NAV ====== */
+
+/* ====== MOBILE – transactions.html ====== */
+@media(max-width:768px){
+  .summary-row{grid-template-columns:1fr 1fr!important;gap:10px!important;}
+  .summary-card{padding:16px 14px!important;}
+  .summary-card .label{font-size:0.75rem!important;}
+  .summary-card .value{font-size:1.2rem!important;}
+
+  .panel-header{padding:14px 16px!important;flex-direction:column!important;align-items:flex-start!important;gap:8px!important;}
+  .panel-header h2{font-size:1rem!important;}
+  .filter-row{flex-direction:column!important;gap:8px!important;}
+  .filter-row select,.filter-row input{width:100%!important;font-size:0.85rem!important;}
+
+  .table-scroll{overflow-x:auto!important;}
+  .tx-table{min-width:560px!important;}
+  .tx-table th,.tx-table td{padding:10px 8px!important;font-size:0.8rem!important;}
+  .hash-cell{max-width:100px!important;}
+
+  .clear-btn{width:100%!important;padding:10px!important;}
+}
+@media(max-width:480px){
+  .summary-row{grid-template-columns:1fr!important;}
+}
+/* ====== END MOBILE transactions.html ====== */
+
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><div class="logo-box">B</div>Nexus Live</a>
+  <div class="nav-links">
+    <a href="#">P2P</a><a href="index.html#swapSection">Swap</a><a href="#">Support</a>
+  </div>
+  <div class="nav-status">
+    <span id="navWallet">Wallet: $0.00</span>
+    <span id="profileNavName">Loading...</span>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="tab-row">
+    <a href="profile.html" class="tab">Overview</a>
+    <a href="deposit.html" class="tab">Deposit</a>
+    <a href="withdraw.html" class="tab">Withdraw</a>
+    <a href="transactions.html" class="tab active">Transactions</a>
+    <a href="transfer.html" class="tab">Transfer</a>
+    <a href="settings.html" class="tab">Settings</a>
+  </div>
+
+  <div class="summary-row">
+    <div class="summary-card">
+      <div class="s-label">Total Transactions</div>
+      <div class="s-val" id="summTotal">—</div>
+      <div class="s-sub">All time</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">Total Deposits</div>
+      <div class="s-val" id="summDeposits" style="color:#4ade80">—</div>
+      <div class="s-sub">Initiated</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">Total Withdrawals</div>
+      <div class="s-val" id="summWithdraws" style="color:#f87171">—</div>
+      <div class="s-sub">Submitted</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Transaction History</h2>
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="deposit">Deposits</button>
+        <button class="filter-btn" data-filter="withdraw">Withdrawals</button>
+        <button class="clear-btn" id="clearBtn">Clear All</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Transaction ID</th><th>Time</th><th>Type</th><th>Coin</th>
+            <th>Amount</th><th>Address</th><th>Status</th><th>Transaction Hash</th>
+          </tr>
+        </thead>
+        <tbody id="txBody"></tbody>
+      </table>
+    </div>
+    <div class="loading-state" id="loadingState">
+      <div class="spinner"></div>Loading transactions
+    </div>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="empty-icon">📋</div>
+      <p>No transactions yet</p>
+      <small>Your deposit and withdrawal history will appear here</small>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCC39kwMyETNvaHY-KezEKkOZV427s60vs",
+  authDomain: "adminpanel-55a5c.firebaseapp.com",
+  projectId: "adminpanel-55a5c",
+  storageBucket: "adminpanel-55a5c.firebasestorage.app",
+  messagingSenderId: "356063021629",
+  appId: "1:356063021629:web:d980b168b69b1de701b854"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+let activeFilter = 'all';
+let allTxs = [];
+let unsubscribeTxs = null;
+
+const coinDataLookup = {
+  BTC: { logo: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', color: '#f7931a' },
+  ETH: { logo: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', color: '#627eea' },
+  USDT: { logo: 'https://assets.coingecko.com/coins/images/325/small/Tether-logo.png', color: '#26a17b' },
+  BNB: { logo: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png?1644979850', color: '#f3ba2f' },
+  XRP: { logo: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png', color: '#25a8e0' },
+  LTC: { logo: 'https://assets.coingecko.com/coins/images/2/small/litecoin.png', color: '#bebebe' },
+  ADA: { logo: 'https://assets.coingecko.com/coins/images/975/small/cardano.png', color: '#0033ad' },
+  DOGE: { logo: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png', color: '#c2a633' },
+  SOL: { logo: 'https://assets.coingecko.com/coins/images/4128/small/solana.png', color: '#00ffa3' },
+  DOT: { logo: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png', color: '#e6007a' },
+  MATIC: { logo: 'https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png', color: '#8247e5' },
+  AVAX: { logo: 'https://assets.coingecko.com/coins/images/12559/small/AVA.png', color: '#e84142' },
+  LINK: { logo: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png', color: '#2a5ada' },
+  TRX: { logo: 'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png', color: '#de0029' },
+  SHIB: { logo: 'https://assets.coingecko.com/coins/images/11939/small/shiba.png', color: '#f58220' },
+  UNI: { logo: 'https://assets.coingecko.com/coins/images/12504/small/uniswap-uni.png', color: '#ff007a' },
+  DAI: { logo: 'https://assets.coingecko.com/coins/images/9956/small/4943.png', color: '#f5b918' },
+  BUSD: { logo: 'https://assets.coingecko.com/coins/images/9576/small/BUSD.png', color: '#f0b90b' },
+  WBTC: { logo: 'https://assets.coingecko.com/coins/images/7598/small/wrapped_bitcoin_wbtc.png', color: '#f7931a' },
+  ATOM: { logo: 'https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png', color: '#2e3148' },
+  USDC: { logo: 'https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png', color: '#2775ca' },
+  BCH: { logo: 'https://assets.coingecko.com/coins/images/780/small/bitcoin-cash-logo.png', color: '#f7931a' },
+  MANA: { logo: 'https://assets.coingecko.com/coins/images/3783/small/mana.png', color: '#2c7bf4' },
+  AAVE: { logo: 'https://assets.coingecko.com/coins/images/12645/small/AAVE.png', color: '#b6509e' },
+  ALGO: { logo: 'https://assets.coingecko.com/coins/images/4380/small/algo.png', color: '#3c4f91' },
+  XLM: { logo: 'https://assets.coingecko.com/coins/images/100/small/stellar.png', color: '#7d7d7d' },
+  EGLD: { logo: 'https://assets.coingecko.com/coins/images/12335/small/elrond1_360.png', color: '#a41e7f' },
+  VET: { logo: 'https://assets.coingecko.com/coins/images/1171/small/vechain.png', color: '#00a8e0' },
+  FIL: { logo: 'https://assets.coingecko.com/coins/images/12817/small/filecoin.png', color: '#0090ff' },
+  AVAX: { logo: 'https://assets.coingecko.com/coins/images/12559/small/AVA.png', color: '#e84142' }
+};
+
+auth.onAuthStateChanged(user => {
+  if (!user) { window.location.href = 'signin.html'; return; }
+  console.log('🔐 Logged in user ID:', user.uid);
+  console.log('📧 Email:', user.email);
+  document.getElementById('profileNavName').textContent = user.displayName || user.email.split('@')[0];
+
+  // Load wallet balance
+  db.collection('users').doc(user.uid).onSnapshot(doc => {
+    if (doc.exists) {
+      console.log('✅ User document found:', doc.data());
+      const bal = doc.data().balance || 0;
+      document.getElementById('navWallet').textContent =
+        'Wallet: $' + parseFloat(bal).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+    } else {
+      console.log('❌ User document NOT found in Firestore');
+    }
+  });
+
+  // Load user's transactions
+  loadTransactions(user.uid);
+});
+
+function loadTransactions(uid) {
+  const loadingState = document.getElementById('loadingState');
+  const emptyState = document.getElementById('emptyState');
+  const txBody = document.getElementById('txBody');
+  loadingState.style.display = 'block';
+  emptyState.style.display = 'none';
+  txBody.innerHTML = '';
+
+  if (unsubscribeTxs) unsubscribeTxs();
+  const collectionRef = db.collection('users').doc(uid).collection('transactions');
+
+  collectionRef.get()
+    .then(snapshot => {
+      allTxs = snapshot.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
+      allTxs.sort((a, b) => {
+        const timeA = a.time?.toDate?.()?.getTime?.() || a.time || 0;
+        const timeB = b.time?.toDate?.()?.getTime?.() || b.time || 0;
+        return timeB - timeA;
+      });
+      renderAll();
+    })
+    .catch(err => {
+      console.error('❌ Firestore Get Error:', err);
+      document.getElementById('loadingState').innerHTML = `<p style="color:#f87171;font-size:0.9rem;padding:20px;">Unable to load transactions. ${err.message}</p>`;
+    })
+    .finally(() => {
+      unsubscribeTxs = collectionRef.onSnapshot(snapshot => {
+        allTxs = snapshot.docs.map(d => ({ firestoreId: d.id, ...d.data() }));
+        allTxs.sort((a, b) => {
+          const timeA = a.time?.toDate?.()?.getTime?.() || a.time || 0;
+          const timeB = b.time?.toDate?.()?.getTime?.() || b.time || 0;
+          return timeB - timeA;
+        });
+        console.log('✅ Real-time update loaded transactions:', allTxs.length);
+        renderAll();
+      }, err => {
+        console.error('❌ Firestore Snapshot Error:', err);
+        let errorMsg = `<strong>Firestore Error:</strong><br>`;
+        if (err.code === 'permission-denied') {
+          errorMsg += `Permission Denied. Fix Firestore Rules.`;
+        } else {
+          errorMsg += err.message;
+        }
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+        loadingState.innerHTML = `<p style="color:#f87171;font-size:0.9rem;padding:20px;">${errorMsg}</p>`;
+        loadingState.style.display = 'block';
+        emptyState.style.display = 'none';
+      });
+  });
+}
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  if (unsubscribeTxs) unsubscribeTxs();
+  auth.signOut().then(() => window.location.href = 'index.html');
+});
+
+function renderAll() {
+  document.getElementById('loadingState').style.display = 'none';
+  const filtered = activeFilter === 'all' ? allTxs : allTxs.filter(t => t.type === activeFilter);
+  document.getElementById('summTotal').textContent     = allTxs.length;
+  document.getElementById('summDeposits').textContent  = allTxs.filter(t => t.type === 'deposit' || t.type === 'credit').length;
+  document.getElementById('summWithdraws').textContent = allTxs.filter(t => t.type === 'withdraw').length;
+
+  const tbody = document.getElementById('txBody');
+  const empty = document.getElementById('emptyState');
+
+  if (filtered.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(tx => {
+    const isDeposit = tx.type === 'deposit';
+    let timeMs = 0;
+    if (tx.time) {
+      timeMs = tx.time.toDate ? tx.time.toDate().getTime() : (typeof tx.time === 'number' ? tx.time : 0);
+    }
+    const dateStr = timeMs ? new Date(timeMs).toLocaleString() : '—';
+    const isCredit = tx.type === 'credit';
+    const typeClass = isDeposit || isCredit ? 'type-deposit' : 'type-withdraw';
+    const typeLabel = isDeposit || isCredit ? '⬇ Input' : '⬆ Output';
+    const amountClass = isDeposit || isCredit ? 'amount-pos' : 'amount-neg';
+    const prefix = isDeposit ? '+' : '-';
+    const statusClass = tx.status === 'Completed' ? 'status-completed' :
+                        tx.status === 'Failed'    ? 'status-failed'    : 'status-pending';
+    const shortHash = tx.hash ? tx.hash.slice(0,10) + '…' + tx.hash.slice(-6) : '—';
+    const shortAddr = tx.address ? tx.address.slice(0,12) + '…' : '—';
+    const txId = (tx.id || tx.firestoreId || '').slice(0,12);
+    const coinSymbol = (tx.coinSymbol || '—').toUpperCase();
+    const coinMeta = coinDataLookup[coinSymbol] || {};
+    const coinLogo = tx.coinLogo || coinMeta.logo || '';
+    const coinColor = tx.coinColor || coinMeta.color || '#333';
+    return `<tr>
+      <td><span class="tx-id">#${txId}</span></td>
+      <td style="white-space:nowrap;font-size:0.82rem;color:var(--muted);">${dateStr}</td>
+      <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
+      <td><div class="coin-cell">
+        <img src="${coinLogo}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="coin-cell-fb" style="display:none;background:${coinColor}22;color:${coinColor||'#aaa'}">${coinSymbol.charAt(0)}</div>
+        <span>${coinSymbol}</span>
+      </div></td>
+      <td><span class="${amountClass}">${prefix}${tx.amount} ${tx.coinSymbol||''}</span></td>
+      <td title="${tx.address||''}" style="font-size:0.82rem;color:var(--muted);font-family:'Courier New',monospace;">${shortAddr}</td>
+      <td><span class="status-pill ${statusClass}"><span class="status-dot"></span>${tx.status||'Pending'}</span></td>
+      <td><span class="hash-cell" title="${tx.hash||''}">${shortHash}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    renderAll();
+  });
+});
+
+document.getElementById('clearBtn').addEventListener('click', async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+  if (!confirm('Delete ALL transaction history from Firebase? This cannot be undone.')) return;
+  const snap = await db.collection('users').doc(user.uid).collection('transactions').get();
+  const batch = db.batch();
+  snap.docs.forEach(d => batch.delete(d.ref));
+  await batch.commit();
+});
+</script>
+
+<div id="gToast">
+  <svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span class="g-msg"></span>
+</div>
+<script>
+(function(){var _t=null;window.showToast=function(msg,kind,dur){kind=kind||'success';dur=dur||3500;var t=document.getElementById('gToast');if(!t)return;var ico=t.querySelector('.g-icon'),sp=t.querySelector('.g-msg');sp.textContent=msg;if(kind==='error'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';}else if(kind==='info'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>';}else{ico.innerHTML='<polyline points="20 6 9 17 4 12"/>';}t.className='g-'+kind+' g-show';clearTimeout(_t);_t=setTimeout(function(){t.classList.remove('g-show');},dur);};})();</script>
+</body>
+</html>

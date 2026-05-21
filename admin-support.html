@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="Image/png" href="logo/nexus_logo-only.png">
+<title>Support Inbox – Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase/firebase-config.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --cyan:#00e5ff;--purple:#a855f7;--pink:#ec4899;
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+  --dark:#080810;--dark2:#0d0d1a;--dark3:#12121f;
+  --text:#e2e8f0;--muted:#64748b;--border:rgba(255,255,255,0.07);
+}
+body{font-family:'Inter',sans-serif;background:var(--dark);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:64px;background:rgba(8,8,16,0.98);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo{display:flex;align-items:center;gap:10px;font-size:1.1rem;font-weight:800;color:#fff;text-decoration:none;}
+.logo-box{width:30px;height:30px;background:linear-gradient(135deg,var(--cyan),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:900;color:#000;}
+.admin-badge{padding:6px 14px;border-radius:999px;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#000;font-weight:700;font-size:0.8rem;}
+.nav-links{display:flex;gap:6px;}
+.nav-links a{padding:8px 14px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:0.85rem;font-weight:500;transition:all 0.2s;}
+.nav-links a:hover{color:#fff;background:rgba(255,255,255,0.05);}
+.nav-links a.active{color:#fff;background:rgba(255,255,255,0.08);}
+
+/* LAYOUT */
+.workspace{flex:1;display:grid;grid-template-columns:320px 1fr;overflow:hidden;}
+
+/* INBOX LIST */
+.inbox{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.inbox-header{padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.inbox-header h2{font-size:1rem;font-weight:700;color:#fff;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.unread-count{background:var(--cyan);color:#000;font-size:0.7rem;font-weight:800;padding:2px 8px;border-radius:999px;}
+.inbox-search{width:100%;padding:9px 12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:#fff;font-size:0.84rem;font-family:'Inter',sans-serif;outline:none;}
+.inbox-search::placeholder{color:var(--muted);}
+.inbox-search:focus{border-color:rgba(0,229,255,0.35);}
+.chat-list{flex:1;overflow-y:auto;padding:8px;}
+.chat-list::-webkit-scrollbar{width:4px;}
+.chat-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:4px;}
+
+.chat-item{padding:14px;border-radius:12px;cursor:pointer;transition:all 0.2s;margin-bottom:4px;border:1px solid transparent;position:relative;}
+.chat-item:hover{background:rgba(255,255,255,0.05);}
+.chat-item.active{background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.3);}
+.chat-item-top{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.chat-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,rgba(0,229,255,0.3),rgba(168,85,247,0.3));display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;color:#fff;flex-shrink:0;}
+.chat-item-info{flex:1;min-width:0;}
+.chat-item-email{font-size:0.84rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chat-item-time{font-size:0.72rem;color:var(--muted);white-space:nowrap;}
+.chat-item-preview{font-size:0.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.unread-badge{position:absolute;top:12px;right:12px;width:18px;height:18px;border-radius:50%;background:var(--cyan);color:#000;font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.status-dot.open{background:var(--green);}
+.status-dot.resolved{background:var(--muted);}
+
+.empty-inbox{padding:40px 20px;text-align:center;color:var(--muted);font-size:0.88rem;}
+.empty-inbox-icon{font-size:2.5rem;display:block;margin-bottom:10px;}
+
+/* CONVERSATION PANEL */
+.convo{display:flex;flex-direction:column;overflow:hidden;}
+.convo-placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);}
+.convo-placeholder-icon{font-size:3rem;margin-bottom:8px;}
+.convo-placeholder h3{font-size:1rem;font-weight:600;color:var(--text);}
+
+.convo-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-shrink:0;}
+.convo-user-info{flex:1;}
+.convo-user-email{font-size:0.95rem;font-weight:700;color:#fff;}
+.convo-user-uid{font-size:0.75rem;color:var(--muted);font-family:monospace;margin-top:2px;}
+.convo-actions{display:flex;gap:8px;}
+.action-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);font-size:0.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;}
+.action-btn:hover{background:rgba(255,255,255,0.08);}
+.action-btn.resolve{border-color:rgba(34,197,94,0.3);color:var(--green);}
+.action-btn.resolve:hover{background:rgba(34,197,94,0.1);}
+
+.convo-messages{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:14px;}
+.convo-messages::-webkit-scrollbar{width:4px;}
+.convo-messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:4px;}
+
+.msg-row{display:flex;gap:10px;align-items:flex-end;}
+.msg-row.mine{flex-direction:row-reverse;}
+.msg-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0;}
+.msg-avatar.support{background:linear-gradient(135deg,var(--cyan),var(--purple));color:#000;}
+.msg-avatar.user{background:rgba(255,255,255,0.1);color:var(--text);}
+.bubble{max-width:70%;padding:10px 14px;border-radius:14px;font-size:0.87rem;line-height:1.55;word-break:break-word;}
+.bubble.support{background:linear-gradient(135deg,rgba(0,229,255,0.15),rgba(168,85,247,0.15));border:1px solid rgba(168,85,247,0.25);color:#fff;border-bottom-right-radius:4px;}
+.bubble.user{background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:4px;}
+.msg-col{display:flex;flex-direction:column;}
+.msg-col.mine{align-items:flex-end;}
+.bubble-time{font-size:0.7rem;color:var(--muted);margin-top:3px;}
+
+/* REPLY INPUT */
+.reply-area{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;}
+.reply-input{flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:11px 14px;color:#fff;font-size:0.88rem;font-family:'Inter',sans-serif;resize:none;outline:none;max-height:120px;transition:border-color 0.2s;line-height:1.5;}
+.reply-input::placeholder{color:var(--muted);}
+.reply-input:focus{border-color:rgba(0,229,255,0.4);}
+.reply-send-btn{width:42px;height:42px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#000;font-size:1rem;cursor:pointer;transition:transform 0.2s;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.reply-send-btn:hover{transform:scale(1.06);}
+.reply-send-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+
+/* TOAST */
+#gToast{position:fixed;top:16px;right:16px;display:flex;align-items:center;gap:10px;padding:13px 18px;border-radius:12px;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:600;backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:99999;opacity:0;transform:translateY(-14px) scale(.96);transition:opacity .28s,transform .28s;pointer-events:none;}
+#gToast.g-success{background:rgba(5,46,22,.85);border:1px solid rgba(34,197,94,.45);color:#4ade80;}
+#gToast.g-error{background:rgba(69,10,10,.85);border:1px solid rgba(239,68,68,.45);color:#f87171;}
+#gToast.g-show{opacity:1;transform:translateY(0) scale(1);}
+
+/* RESOLVED BADGE */
+.resolved-banner{text-align:center;padding:10px;font-size:0.82rem;color:var(--muted);background:rgba(255,255,255,0.03);border-top:1px solid var(--border);}
+.tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:600;}
+.tag.open{background:rgba(34,197,94,0.12);color:var(--green);}
+.tag.resolved{background:rgba(100,116,139,0.15);color:var(--muted);}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="admin.html">
+    <div class="logo-box">N</div>
+    Nexus Admin
+  </a>
+  <div class="nav-links">
+    <a href="admin.html">Dashboard</a>
+    <a href="admin-support.html" class="active">Support Inbox</a>
+  </div>
+  <div class="admin-badge">Admin</div>
+</nav>
+
+<div class="workspace">
+
+  <!-- INBOX -->
+  <div class="inbox">
+    <div class="inbox-header">
+      <h2>Support Inbox <span class="unread-count" id="unreadCount">0</span></h2>
+      <input class="inbox-search" id="searchInput" placeholder="Search by email…" oninput="filterChats(this.value)">
+    </div>
+    <div class="chat-list" id="chatList">
+      <div class="empty-inbox">
+        <span class="empty-inbox-icon">📭</span>
+        Loading conversations…
+      </div>
+    </div>
+  </div>
+
+  <!-- CONVERSATION -->
+  <div class="convo" id="convoPanel">
+    <div class="convo-placeholder" id="convoPlaceholder">
+      <div class="convo-placeholder-icon">💬</div>
+      <h3>Select a conversation</h3>
+      <p style="font-size:0.85rem;color:var(--muted);">Choose a chat from the inbox to view and reply.</p>
+    </div>
+
+    <div id="convoContent" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="convo-header">
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,rgba(0,229,255,0.3),rgba(168,85,247,0.3));display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:#fff;" id="convoAvatar">U</div>
+        <div class="convo-user-info">
+          <div class="convo-user-email" id="convoEmail">—</div>
+          <div class="convo-user-uid" id="convoUid">—</div>
+        </div>
+        <span class="tag open" id="convoStatus">open</span>
+        <div class="convo-actions">
+          <button class="action-btn resolve" onclick="markResolved()" id="resolveBtn">✓ Mark Resolved</button>
+        </div>
+      </div>
+
+      <div class="convo-messages" id="convoMessages"></div>
+
+      <div class="reply-area" id="replyArea">
+        <textarea class="reply-input" id="replyInput" placeholder="Type your reply…" rows="1"></textarea>
+        <button class="reply-send-btn" id="replySendBtn" onclick="sendReply()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="gToast"></div>
+
+<script>
+// Firebase config is loaded from firebase/firebase-config.js and exposes `auth` and `db` globals.
+
+let allChats = [];
+let activeChat = null;
+let msgUnsubscribe = null;
+
+if (typeof auth === 'undefined' || typeof db === 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('chatList').innerHTML = '<div class="empty-inbox"><span class="empty-inbox-icon">⚠️</span>Firebase not connected. Please check `firebase/firebase-config.js`.</div>';
+  });
+  throw new Error('Firebase is not initialized on admin-support.html');
+}
+
+// ---- AUTH CHECK ----
+auth.onAuthStateChanged(async user => {
+  if (!user) { window.location.href = 'signin.html?redirect=admin-support.html'; return; }
+  const token = await user.getIdTokenResult();
+  if (!token.claims.admin) { window.location.href = 'index.html'; return; }
+  loadInbox();
+});
+
+// ---- LOAD ALL CHATS ----
+function loadInbox() {
+  db.collection('support_chats')
+    .orderBy('lastAt', 'desc')
+    .onSnapshot(snap => {
+      allChats = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      renderInbox(allChats);
+      const total = allChats.reduce((s, c) => s + (c.unreadAdmin || 0), 0);
+      document.getElementById('unreadCount').textContent = total;
+    });
+}
+
+function renderInbox(chats) {
+  const list = document.getElementById('chatList');
+  if (chats.length === 0) {
+    list.innerHTML = '<div class="empty-inbox"><span class="empty-inbox-icon">📭</span>No conversations yet.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  chats.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'chat-item' + (activeChat?.id === c.id ? ' active' : '');
+    el.onclick = () => openChat(c);
+    const email = c.email || c.uid || 'Unknown';
+    const initials = email[0].toUpperCase();
+    const time = c.lastAt?.toDate ? relativeTime(c.lastAt.toDate()) : '';
+    const isOpen = c.status !== 'resolved';
+    el.innerHTML = `
+      <div class="chat-item-top">
+        <div class="chat-avatar">${initials}</div>
+        <div class="chat-item-info">
+          <div class="chat-item-email">${email}</div>
+          <div class="chat-item-time">${time}</div>
+        </div>
+        <div class="status-dot ${isOpen ? 'open' : 'resolved'}"></div>
+      </div>
+      <div class="chat-item-preview">${c.lastMessage || 'No messages yet'}</div>
+      ${(c.unreadAdmin > 0) ? `<div class="unread-badge">${c.unreadAdmin}</div>` : ''}
+    `;
+    list.appendChild(el);
+  });
+}
+
+function filterChats(q) {
+  const filtered = allChats.filter(c => (c.email || '').toLowerCase().includes(q.toLowerCase()));
+  renderInbox(filtered);
+}
+
+// ---- OPEN CHAT ----
+function openChat(chat) {
+  activeChat = chat;
+  renderInbox(allChats); // refresh active state
+
+  document.getElementById('convoPlaceholder').style.display = 'none';
+  const content = document.getElementById('convoContent');
+  content.style.display = 'flex';
+
+  document.getElementById('convoEmail').textContent = chat.email || 'Unknown user';
+  document.getElementById('convoUid').textContent = 'UID: ' + chat.id;
+  document.getElementById('convoAvatar').textContent = (chat.email || 'U')[0].toUpperCase();
+
+  const isResolved = chat.status === 'resolved';
+  const statusEl = document.getElementById('convoStatus');
+  statusEl.textContent = isResolved ? 'resolved' : 'open';
+  statusEl.className = 'tag ' + (isResolved ? 'resolved' : 'open');
+  document.getElementById('resolveBtn').style.display = isResolved ? 'none' : 'inline-flex';
+  document.getElementById('replyArea').style.display = isResolved ? 'none' : 'flex';
+
+  // Mark as read
+  if (chat.unreadAdmin > 0) {
+    db.collection('support_chats').doc(chat.id).update({ unreadAdmin: 0 });
+  }
+
+  subscribeConvo(chat.id);
+}
+
+// ---- LISTEN MESSAGES ----
+function subscribeConvo(chatId) {
+  if (msgUnsubscribe) msgUnsubscribe();
+  msgUnsubscribe = db.collection('support_chats').doc(chatId)
+    .collection('messages')
+    .orderBy('createdAt', 'asc')
+    .onSnapshot(snap => {
+      renderConvoMessages(snap.docs.map(d => ({id: d.id, ...d.data()})));
+    });
+}
+
+function renderConvoMessages(msgs) {
+  const container = document.getElementById('convoMessages');
+  const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+  container.innerHTML = '';
+
+  msgs.forEach(msg => {
+    const isSupport = msg.sender === 'support';
+    const row = document.createElement('div');
+    row.className = 'msg-row' + (isSupport ? ' mine' : '');
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar ' + (isSupport ? 'support' : 'user');
+    avatar.textContent = isSupport ? '🎧' : (activeChat?.email?.[0]?.toUpperCase() || 'U');
+
+    const col = document.createElement('div');
+    col.className = 'msg-col' + (isSupport ? ' mine' : '');
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + (isSupport ? 'support' : 'user');
+    bubble.textContent = msg.text;
+
+    const time = document.createElement('div');
+    time.className = 'bubble-time';
+    time.textContent = msg.createdAt?.toDate ? formatTime(msg.createdAt.toDate()) : 'now';
+
+    col.appendChild(bubble);
+    col.appendChild(time);
+    row.appendChild(avatar);
+    row.appendChild(col);
+    container.appendChild(row);
+  });
+
+  if (wasAtBottom || msgs.length <= 3) container.scrollTop = container.scrollHeight;
+}
+
+// ---- SEND REPLY ----
+async function sendReply() {
+  const input = document.getElementById('replyInput');
+  const text = input.value.trim();
+  if (!text || !activeChat) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('replySendBtn').disabled = true;
+
+  try {
+    await db.collection('support_chats').doc(activeChat.id)
+      .collection('messages').add({
+        sender: 'support',
+        text: text,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        byAdmin: true
+      });
+    await db.collection('support_chats').doc(activeChat.id).update({
+      lastMessage: text,
+      lastAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast('Reply sent', 'success');
+  } catch(e) {
+    toast('Failed to send reply', 'error');
+    console.error(e);
+  }
+
+  document.getElementById('replySendBtn').disabled = false;
+}
+
+// ---- MARK RESOLVED ----
+async function markResolved() {
+  if (!activeChat) return;
+  await db.collection('support_chats').doc(activeChat.id).update({ status: 'resolved' });
+  // Add a system message
+  await db.collection('support_chats').doc(activeChat.id).collection('messages').add({
+    sender: 'support',
+    text: '✅ This support ticket has been marked as resolved. Thank you for contacting Nexus Live support!',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  document.getElementById('resolveBtn').style.display = 'none';
+  document.getElementById('replyArea').style.display = 'none';
+  const statusEl = document.getElementById('convoStatus');
+  statusEl.textContent = 'resolved';
+  statusEl.className = 'tag resolved';
+  toast('Ticket marked as resolved', 'success');
+}
+
+// ---- HELPERS ----
+function formatTime(d) {
+  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+function relativeTime(d) {
+  const diff = Date.now() - d.getTime();
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+  return d.toLocaleDateString();
+}
+
+// ---- AUTO RESIZE ----
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('replyInput');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); }
+  });
+});
+
+// ---- TOAST ----
+function toast(msg, type='info') {
+  const el = document.getElementById('gToast');
+  el.textContent = msg;
+  el.className = 'g-' + type + ' g-show';
+  setTimeout(() => { el.className = ''; }, 3000);
+}
+</script>
+</body>
+</html>

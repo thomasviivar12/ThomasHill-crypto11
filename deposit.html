@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus | Deposit</title>
+<link rel="icon" type="Image/png" href="logo/nexus_logo-only.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080810;--bg2:#0d0d1a;--bg3:#11121f;--panel:#111526;
+  --text:#e2e8f0;--muted:#8b95ac;--cyan:#00e5ff;--purple:#a855f7;--pink:#ec4899;
+  --green:#22c55e;--red:#ef4444;--border:rgba(255,255,255,0.08);
+}
+body{font-family:'Inter',sans-serif;background:linear-gradient(180deg,#05050b 0%,#0a0b18 100%);color:var(--text);min-height:100vh;}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;position:sticky;top:0;background:rgba(8,8,16,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;font-weight:800;text-decoration:none;font-size:1.1rem;}
+.logo-box{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:800;color:#000;font-size:1rem;}
+.nav-links{display:flex;gap:24px;align-items:center;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:0.92rem;transition:color 0.2s;}
+.nav-links a:hover{color:#fff;}
+.nav-status{display:flex;gap:12px;align-items:center;font-size:0.9rem;color:var(--muted);}
+.nav-status span{padding:10px 16px;border:1px solid rgba(255,255,255,0.08);border-radius:999px;}
+.logout-btn{padding:10px 16px;border:none;border-radius:999px;background:rgba(255,255,255,0.1);color:#fff;font-weight:600;cursor:pointer;transition:background 0.2s;font-family:'Inter',sans-serif;}
+.logout-btn:hover{background:rgba(255,255,255,0.18);}
+
+/* PAGE */
+.page-wrap{max-width:1240px;margin:32px auto;padding:0 24px 60px;}
+
+/* TABS */
+.tab-row{display:flex;flex-wrap:wrap;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;justify-content:center;margin-bottom:32px;}
+.tab{padding:10px 18px;border-radius:12px;color:var(--muted);text-decoration:none;font-size:0.92rem;transition:all 0.2s;}
+.tab.active,.tab:hover{background:rgba(255,255,255,0.06);color:#fff;}
+
+/* MAIN LAYOUT */
+.deposit-layout{display:grid;grid-template-columns:400px 1fr;gap:24px;align-items:start;}
+
+/* COIN LIST */
+.coin-list-panel{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.coin-list-header{padding:20px 24px;border-bottom:1px solid var(--border);}
+.coin-list-header h3{font-size:1rem;font-weight:700;color:#fff;}
+.coin-list-header p{font-size:0.82rem;color:var(--muted);margin-top:4px;}
+.coin-list{max-height:620px;overflow-y:auto;}
+.coin-list::-webkit-scrollbar{width:4px;}
+.coin-list::-webkit-scrollbar-track{background:transparent;}
+.coin-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px;}
+.coin-item{display:flex;align-items:center;gap:14px;padding:16px 24px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.2s;border-left:3px solid transparent;}
+.coin-item:last-child{border-bottom:none;}
+.coin-item:hover{background:rgba(255,255,255,0.04);}
+.coin-item.active{background:linear-gradient(90deg,rgba(99,75,220,0.35),rgba(99,75,220,0.08));border-left-color:var(--purple);}
+.coin-logo{width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.coin-logo-fallback{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;flex-shrink:0;}
+.coin-item-info{flex:1;min-width:0;}
+.coin-item-name{font-size:0.93rem;font-weight:600;color:var(--text);}
+.coin-item.active .coin-item-name{color:#fff;}
+.coin-item-network{font-size:0.76rem;color:var(--muted);margin-top:2px;}
+.coin-item-bal{font-size:0.85rem;font-weight:600;color:var(--muted);white-space:nowrap;}
+
+/* ADDRESS PANEL */
+.address-panel{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.address-panel-header{padding:22px 28px;border-bottom:1px solid var(--border);}
+.address-panel-header h2{font-size:1.1rem;font-weight:700;color:#fff;}
+.address-body{padding:28px;}
+
+/* SELECTED COIN INFO */
+.selected-coin-row{display:flex;align-items:center;gap:14px;margin-bottom:26px;padding-bottom:22px;border-bottom:1px solid var(--border);}
+.selected-coin-logo{width:50px;height:50px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.selected-coin-logo-fallback{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800;flex-shrink:0;}
+.selected-coin-label{font-size:0.82rem;color:var(--muted);}
+.selected-coin-balance{font-size:1.6rem;font-weight:800;color:#fff;margin-top:2px;}
+
+/* QR + INFO */
+.qr-info-row{display:grid;grid-template-columns:190px 1fr;gap:24px;margin-bottom:24px;align-items:start;}
+.qr-box{background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;align-items:center;justify-content:center;min-height:190px;}
+.qr-box canvas,.qr-box img{border-radius:6px;display:block;}
+
+.info-list{display:flex;flex-direction:column;gap:16px;}
+.info-item{display:flex;align-items:flex-start;gap:10px;font-size:0.86rem;color:var(--muted);line-height:1.65;}
+.info-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0;margin-top:8px;}
+
+/* ADDRESS BOX */
+.address-box{display:flex;align-items:stretch;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.address-text{flex:1;padding:16px 18px;font-size:0.85rem;color:var(--text);font-family:'Courier New',monospace;word-break:break-all;line-height:1.55;}
+.copy-btn{padding:16px 24px;background:linear-gradient(135deg,var(--purple),#4f46e5);color:#fff;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;transition:opacity 0.2s;white-space:nowrap;font-family:'Inter',sans-serif;min-width:90px;}
+.copy-btn:hover{opacity:0.85;}
+.copy-btn.copied{background:linear-gradient(135deg,var(--green),#059669);}
+
+/* NOTICE */
+.notice-box{margin-top:18px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.18);border-radius:14px;padding:15px 18px;display:flex;gap:12px;align-items:flex-start;}
+.notice-icon{font-size:1rem;flex-shrink:0;margin-top:1px;}
+.notice-text{font-size:0.82rem;color:#fcd34d;line-height:1.65;}
+.deposit-btn{width:100%;margin-top:16px;padding:14px 18px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#000;font-weight:700;cursor:pointer;transition:transform 0.2s;}
+.deposit-btn:hover{transform:translateY(-1px);}
+
+/* EMPTY STATE */
+.empty-state{padding:72px 28px;text-align:center;color:var(--muted);}
+.empty-state p{font-size:0.95rem;margin-top:16px;}
+
+@media(max-width:920px){
+  .deposit-layout{grid-template-columns:1fr;}
+  .qr-info-row{grid-template-columns:1fr;}
+  nav{padding:14px 20px;}
+  .nav-links{display:none;}
+}
+
+/* ===== UNIVERSAL TOAST ===== */
+#gToast{position:fixed;top:16px;right:16px;display:flex;align-items:center;gap:10px;padding:13px 18px 13px 14px;border-radius:12px;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:600;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:99999;opacity:0;transform:translateY(-14px) scale(.96);transition:opacity .28s ease,transform .28s ease;pointer-events:none;min-width:220px;max-width:calc(100vw - 32px);}
+#gToast.g-success{background:rgba(5,46,22,.85);border:1px solid rgba(34,197,94,.45);color:#4ade80;}
+#gToast.g-error{background:rgba(69,10,10,.85);border:1px solid rgba(239,68,68,.45);color:#f87171;}
+#gToast.g-info{background:rgba(8,28,60,.85);border:1px solid rgba(99,179,237,.45);color:#93c5fd;}
+#gToast.g-show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+#gToast .g-icon{flex-shrink:0;width:18px;height:18px;}
+#gToast .g-msg{flex:1;line-height:1.4;}
+
+/* ====== SHARED NAV MOBILE ====== */
+@media(max-width:768px){
+  nav{padding:12px 16px!important;height:auto!important;flex-wrap:wrap;gap:8px;}
+  .nav-links{display:none!important;}
+  .logo{font-size:1rem!important;}
+  .logo-box{width:30px!important;height:30px!important;font-size:0.85rem!important;}
+  .nav-status span{padding:8px 12px!important;font-size:0.8rem!important;}
+  .logout-btn{padding:8px 12px!important;font-size:0.82rem!important;}
+  .page-wrap{margin-top:16px!important;padding:0 12px 48px!important;}
+  .tab-row{padding:10px!important;gap:6px!important;border-radius:12px!important;}
+  .tab{padding:8px 12px!important;font-size:0.82rem!important;}
+}
+/* ====== END SHARED NAV ====== */
+
+/* ====== MOBILE – deposit.html ====== */
+@media(max-width:768px){
+  .deposit-layout{grid-template-columns:1fr!important;gap:16px!important;}
+  .coin-sidebar{max-height:260px!important;}
+  .coin-list{max-height:200px!important;}
+  .coin-item{padding:12px 16px!important;}
+  .coin-logo,.coin-logo-fallback{width:32px!important;height:32px!important;}
+  .coin-item-name{font-size:0.87rem!important;}
+  .coin-item-network{font-size:0.72rem!important;}
+
+  .address-body{padding:18px 14px!important;}
+  .selected-coin-row{flex-wrap:wrap;gap:10px!important;margin-bottom:18px!important;}
+  .selected-coin-balance{font-size:1.3rem!important;}
+
+  .qr-info-row{grid-template-columns:1fr!important;gap:16px!important;}
+  .qr-box{min-height:140px!important;padding:10px!important;}
+
+  .address-box{flex-direction:column!important;}
+  .address-text{padding:12px 14px!important;font-size:0.82rem!important;}
+  .copy-btn{width:100%!important;padding:14px!important;border-radius:0 0 14px 14px!important;}
+
+  .notice-box{padding:12px 14px!important;}
+  .notice-text{font-size:0.8rem!important;}
+  .deposit-btn{padding:13px!important;}
+}
+/* ====== END MOBILE deposit.html ====== */
+
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo"><div class="logo-box">B</div>Nexus Live</a>
+  <div class="nav-links">
+    <a href="#">P2P</a>
+    <a href="index.html#swapSection">Swap</a>
+    <a href="#">Support</a>
+  </div>
+  <div class="nav-status">
+    <span>Wallet: <strong id="walletAmount">0 USD</strong></span>
+    <span id="profileNavName">Loading...</span>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="tab-row">
+    <a href="profile.html" class="tab">Overview</a>
+    <a href="deposit.html" class="tab active">Deposit</a>
+    <a href="withdraw.html" class="tab">Withdraw</a>
+    <a href="transactions.html" class="tab">Transactions</a>
+    <a href="transfer.html" class="tab">Transfer</a>
+    <a href="settings.html" class="tab">Settings</a>
+  </div>
+
+  <div class="deposit-layout">
+    <!-- LEFT: COIN LIST -->
+    <div class="coin-list-panel">
+      <div class="coin-list-header">
+        <h3>Select Coin</h3>
+        <p>Choose a cryptocurrency to deposit</p>
+      </div>
+      <div class="coin-list" id="coinList"></div>
+    </div>
+
+    <!-- RIGHT: ADDRESS PANEL -->
+    <div class="address-panel">
+      <div class="address-panel-header">
+        <h2>Wallet Deposit Address</h2>
+      </div>
+      <div class="address-body" id="addressBody">
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.35"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+          <p>Select a coin to view its deposit address.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── COIN DATA ────────────────────────────────────────────────────────────────
+const coins = [
+  { id:'btc',  name:'Bitcoin',          network:'Bitcoin Network',    symbol:'BTC',  color:'#f7931a', logo:'https://cryptologos.cc/logos/bitcoin-btc-logo.png',            address:'bc1qumq7dgk7l7fk9w5mas8wknk8hjln0edsccv52r',                                               minDeposit:'0.001279839784536413', confirmations:3  },
+  { id:'eth',  name:'Ethereum ERC-20',  network:'Ethereum Network',   symbol:'ETH',  color:'#627eea', logo:'https://cryptologos.cc/logos/ethereum-eth-logo.png',            address:'0x4Ae3B2C8F4a6E1d9C5B7F0A2D3E6C9B8F1A4D7E0',                                        minDeposit:'0.01',                 confirmations:12 },
+  { id:'ltc',  name:'Litecoin',         network:'Litecoin Network',   symbol:'LTC',  color:'#bfbbbb', logo:'https://cryptologos.cc/logos/litecoin-ltc-logo.png',            address:'ltc1qw508d6qejxtdg4y5r3zarvary0c5xw7kgmn4n9',                                          minDeposit:'0.1',                  confirmations:6  },
+  { id:'usdt-trc20', name:'USDT TRC-20',network:'Tron Network',       symbol:'USDT', color:'#26a17b', logo:'https://cryptologos.cc/logos/tether-usdt-logo.png',             address:'TLa2f6VPqDgRE67v1736s7bJ8ay5Wk1GZz',                                                minDeposit:'1',                    confirmations:20 },
+  { id:'usdt-erc20', name:'USDT ERC-20',network:'Ethereum Network',   symbol:'USDT', color:'#26a17b', logo:'https://cryptologos.cc/logos/tether-usdt-logo.png',             address:'0x9F8B6A1C4D2E5F0A3B7C8D9E1F2A3B4C5D6E7F8A',                                        minDeposit:'10',                   confirmations:12 },
+  { id:'usdt-bep20', name:'USDT BEP-20',network:'BSC Network',        symbol:'USDT', color:'#26a17b', logo:'https://cryptologos.cc/logos/tether-usdt-logo.png',             address:'0x3B4C5D6E7F8A9B0C1D2E3F4A5B6C7D8E9F0A1B2C',                                        minDeposit:'5',                    confirmations:15 },
+  { id:'trx',  name:'Tron',             network:'Tron Network',       symbol:'TRX',  color:'#ef0027', logo:'https://cryptologos.cc/logos/tron-trx-logo.png',                address:'TGj1Ej1qRzL4AvRPALXgVqnPuqBdKNnkzb',                                               minDeposit:'100',                  confirmations:20 },
+  { id:'usdc', name:'USD Coin ERC-20',  network:'Ethereum Network',   symbol:'USDC', color:'#2775ca', logo:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',           address:'0x1A2B3C4D5E6F7A8B9C0D1E2F3A4B5C6D7E8F9A0B',                                        minDeposit:'10',                   confirmations:12 },
+  { id:'bnb',  name:'Binance Coin',     network:'BSC Network',        symbol:'BNB',  color:'#f3ba2f', logo:'https://cryptologos.cc/logos/bnb-bnb-logo.png',                 address:'bnb1grpf0955h0ykzq3ar5nmum7y6gdfl6lxfn46h2',                                         minDeposit:'0.05',                 confirmations:15 },
+  { id:'sol',  name:'Solana',           network:'Solana Network',     symbol:'SOL',  color:'#9945ff', logo:'https://cryptologos.cc/logos/solana-sol-logo.png',              address:'7EcDhSYGxXyscszYEp35KHN8vvw3svAuLKTzXwCFLtV',                                        minDeposit:'0.1',                  confirmations:32 },
+  { id:'xrp',  name:'Ripple XRP',       network:'XRP Ledger',         symbol:'XRP',  color:'#346aa9', logo:'https://cryptologos.cc/logos/xrp-xrp-logo.png',                 address:'rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh',                                                minDeposit:'20',                   confirmations:6  },
+  { id:'doge', name:'Dogecoin',         network:'Dogecoin Network',   symbol:'DOGE', color:'#c2a633', logo:'https://cryptologos.cc/logos/dogecoin-doge-logo.png',           address:'D7Y55Jr7jBVBitQGmGQEEbQCPjEfqv1DSa',                                                minDeposit:'50',                   confirmations:6  },
+  { id:'ada',  name:'Cardano',          network:'Cardano Network',    symbol:'ADA',  color:'#0033ad', logo:'https://cryptologos.cc/logos/cardano-ada-logo.png',             address:'addr1qx2fxv2umyhttkxyxp8x0dlpdt3k6cwng5pxj3jhsydzer3jkml5z',                        minDeposit:'5',                    confirmations:15 },
+  { id:'matic',name:'Polygon MATIC',    network:'Polygon Network',    symbol:'MATIC',color:'#8247e5', logo:'https://cryptologos.cc/logos/polygon-matic-logo.png',           address:'0xAbCdEf1234567890AbCdEf1234567890AbCdEf12',                                        minDeposit:'10',                   confirmations:128},
+  { id:'dot',  name:'Polkadot',         network:'Polkadot Network',   symbol:'DOT',  color:'#e6007a', logo:'https://cryptologos.cc/logos/polkadot-new-dot-logo.png',        address:'1FRMM8PEiWXYax7rpS6X4XZX1aAAxSWx1CrKTyrVYhV2ke',                                  minDeposit:'1',                    confirmations:10 },
+  { id:'link', name:'Chainlink',        network:'Ethereum Network',   symbol:'LINK', color:'#2a5ada', logo:'https://cryptologos.cc/logos/chainlink-link-logo.png',          address:'0xFeDCbA9876543210FeDCbA9876543210FeDCbA98',                                        minDeposit:'1',                    confirmations:12 },
+  { id:'avax', name:'Avalanche',        network:'Avalanche Network',  symbol:'AVAX', color:'#e84142', logo:'https://cryptologos.cc/logos/avalanche-avax-logo.png',          address:'X-avax1tzdcgj4ehsvhhgpl7zylwpzvsfqgqpkzxm9z0d',                                    minDeposit:'0.1',                  confirmations:2  },
+  { id:'shib', name:'Shiba Inu',        network:'Ethereum Network',   symbol:'SHIB', color:'#ff5700', logo:'https://cryptologos.cc/logos/shiba-inu-shib-logo.png',          address:'0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE',                                        minDeposit:'1000000',              confirmations:12 },
+];
+
+let selectedCoin = null;
+
+// ─── BUILD COIN LIST ──────────────────────────────────────────────────────────
+function buildCoinList() {
+  const list = document.getElementById('coinList');
+  coins.forEach((coin, i) => {
+    const item = document.createElement('div');
+    item.className = 'coin-item' + (i === 0 ? ' active' : '');
+    item.innerHTML = `
+      <img class="coin-logo" src="${coin.logo}" alt="${coin.symbol}"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="coin-logo-fallback" style="display:none;background:${coin.color}22;color:${coin.color}">
+        ${coin.symbol.charAt(0)}
+      </div>
+      <div class="coin-item-info">
+        <div class="coin-item-name">${coin.name}</div>
+        <div class="coin-item-network">${coin.network}</div>
+      </div>
+      <div class="coin-item-bal">0 ${coin.symbol}</div>
+    `;
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.coin-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+      renderAddressPanel(coin);
+    });
+    list.appendChild(item);
+  });
+  renderAddressPanel(coins[0]);
+}
+
+// ─── RENDER RIGHT PANEL ───────────────────────────────────────────────────────
+function renderAddressPanel(coin) {
+  selectedCoin = coin;
+  const body = document.getElementById('addressBody');
+  body.innerHTML = `
+    <div class="selected-coin-row">
+      <img class="selected-coin-logo" src="${coin.logo}" alt="${coin.symbol}"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="selected-coin-logo-fallback" style="display:none;background:${coin.color}22;color:${coin.color};font-size:1.3rem;font-weight:800;width:50px;height:50px;border-radius:50%;align-items:center;justify-content:center;">
+        ${coin.symbol.charAt(0)}
+      </div>
+      <div>
+        <div class="selected-coin-label">${coin.symbol} ${coin.name}</div>
+        <div class="selected-coin-balance">0</div>
+      </div>
+    </div>
+
+    <div class="qr-info-row">
+      <div class="qr-box" id="qrBox"></div>
+      <div class="info-list">
+        <div class="info-item">
+          <span class="info-dot"></span>
+          <span>Coins will be deposited after <strong style="color:#fff">${coin.confirmations} network confirmations</strong>.</span>
+        </div>
+        <div class="info-item">
+          <span class="info-dot"></span>
+          <span>Send only <strong style="color:#fff">${coin.symbol}</strong> to this deposit address. Sending coin or token other than ${coin.symbol} to this address may result in the <strong style="color:#ef4444">loss of your deposit</strong>.</span>
+        </div>
+        <div class="info-item">
+          <span class="info-dot"></span>
+          <span>Minimum deposit amount: <strong style="color:#fff">${coin.minDeposit}</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="address-box">
+      <div class="address-text">${coin.address}</div>
+      <button class="copy-btn" id="copyBtn">COPY</button>
+    </div>
+
+    <div class="notice-box">
+      <span class="notice-icon">⚠️</span>
+      <div class="notice-text">
+        Always verify the deposit address before sending. CryptoStudio is not responsible for funds sent to wrong addresses. Network: <strong>${coin.network}</strong>.
+      </div>
+    </div>
+  `;
+
+  // QR Code
+  try {
+    new QRCode(document.getElementById('qrBox'), {
+      text: coin.address,
+      width: 158, height: 158,
+      colorDark: '#ffffff', colorLight: '#0d0d1a',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e) {}
+
+  // Copy button
+  document.getElementById('copyBtn').addEventListener('click', function() {
+    navigator.clipboard.writeText(coin.address).then(() => { showToast(coin.symbol + ' Address copied to clipboard', 'success'); }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = coin.address;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    });
+    this.textContent = 'COPIED!';
+    this.classList.add('copied');
+    setTimeout(() => { this.textContent = 'COPY'; this.classList.remove('copied'); }, 2000);
+  });
+
+  }
+
+// ─── FIREBASE ─────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyCC39kwMyETNvaHY-KezEKkOZV427s60vs",
+  authDomain: "adminpanel-55a5c.firebaseapp.com",
+  projectId: "adminpanel-55a5c",
+  storageBucket: "adminpanel-55a5c.firebasestorage.app",
+  messagingSenderId: "356063021629",
+  appId: "1:356063021629:web:d980b168b69b1de701b854"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+function updateWallet(balance) {
+  const walletEl = document.getElementById('walletAmount');
+  if (walletEl) walletEl.textContent = `${balance.toFixed(2)} USD`;
+}
+
+function loadUserData(user) {
+  return db.collection('users').doc(user.uid).get()
+    .then(doc => {
+      if (!doc.exists) return { balance: 0 };
+      const data = doc.data();
+      const balance = data.balance || 0;
+      updateWallet(balance);
+      return data;
+    })
+    .catch(() => {
+      updateWallet(0);
+      return { balance: 0 };
+    });
+}
+
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = 'signin.html';
+    return;
+  }
+
+  const name = user.displayName || user.email.split('@')[0];
+  const profileNavEl = document.getElementById('profileNavName');
+  if (profileNavEl) profileNavEl.textContent = name;
+
+  loadUserData(user);
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  auth.signOut().then(() => window.location.href = 'index.html');
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+buildCoinList();
+</script>
+
+<div id="gToast">
+  <svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span class="g-msg"></span>
+</div>
+<script>
+(function(){var _t=null;window.showToast=function(msg,kind,dur){kind=kind||'success';dur=dur||3500;var t=document.getElementById('gToast');if(!t)return;var ico=t.querySelector('.g-icon'),sp=t.querySelector('.g-msg');sp.textContent=msg;if(kind==='error'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';}else if(kind==='info'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>';}else{ico.innerHTML='<polyline points="20 6 9 17 4 12"/>';}t.className='g-'+kind+' g-show';clearTimeout(_t);_t=setTimeout(function(){t.classList.remove('g-show');},dur);};})();</script>
+</body>
+</html>

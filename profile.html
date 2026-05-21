@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus | Profile</title>
+<link rel="icon" type="icon" href="logo/nexus_logo-only.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="firebase/firebase-config.js"></script><style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080810;--bg2:#0d0d1a;--bg3:#11121f;--panel:#111526;
+  --text:#e2e8f0;--muted:#8b95ac;--cyan:#00e5ff;--purple:#a855f7;--pink:#ec4899;
+  --border:rgba(255,255,255,0.08);
+}
+body{font-family:'Inter',sans-serif;background:linear-gradient(180deg,#05050b 0%,#0a0b18 100%);color:var(--text);min-height:100vh;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;position:sticky;top:0;background:rgba(8,8,16,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);z-index:10;}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;font-weight:800;text-decoration:none;font-size:1.1rem;}
+.logo-box{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:800;color:#000;}
+.nav-links{display:flex;gap:24px;align-items:center;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:0.92rem;transition:color 0.2s;}
+.nav-links a:hover{color:#fff;}
+.nav-status{display:flex;gap:12px;align-items:center;font-size:0.9rem;color:var(--muted);}
+.nav-status span{padding:10px 16px;border:1px solid rgba(255,255,255,0.08);border-radius:999px;}
+.logout-btn{padding:10px 16px;border:none;border-radius:999px;background:rgba(255,255,255,0.1);color:#fff;font-weight:600;cursor:pointer;transition:background 0.2s;}
+.logout-btn:hover{background:rgba(255,255,255,0.18);}
+.page-wrap{max-width:1240px;margin:32px auto;padding:0 24px;}
+.tab-row{display:flex;flex-wrap:wrap;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;justify-content:center;}
+.tab{padding:10px 18px;border-radius:12px;color:var(--muted);text-decoration:none;font-size:0.92rem;transition:all 0.2s;}
+.tab.active, .tab:hover{background:rgba(255,255,255,0.06);color:#fff;}
+.grid-2{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start;margin-top:32px;}
+.panel{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:28px;box-shadow:0 20px 70px rgba(0,0,0,0.25);}
+.profile-card{display:grid;gap:18px;}
+.profile-top{display:flex;gap:16px;align-items:center;}
+.profile-avatar{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#1f1f36,#141526);display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:var(--cyan);}
+.profile-info{display:flex;flex-direction:column;gap:6px;}
+.profile-info .name{font-size:1.1rem;font-weight:700;color:#fff;}
+.profile-info .meta{font-size:0.9rem;color:var(--muted);}
+.badge-premium{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(168,85,247,0.12);color:#a37ce7;font-size:0.8rem;font-weight:600;}
+.balance-card{display:grid;grid-template-columns:1fr auto;gap:16px;background:linear-gradient(135deg,rgba(124,58,237,0.22),rgba(14,165,233,0.14));border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:26px;}
+.balance-card span{font-size:0.82rem;color:var(--muted);}
+.balance-card .amount{font-size:2.8rem;font-weight:800;color:#fff;}
+.promo-card{background:linear-gradient(135deg,#13132b,#181830);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:24px;display:grid;gap:18px;}
+.promo-card label{font-size:0.9rem;color:var(--muted);}
+.promo-card input{width:100%;padding:14px 16px;border:1px solid rgba(255,255,255,0.08);border-radius:14px;background:rgba(255,255,255,0.03);color:#fff;outline:none;}
+.promo-card button{padding:12px 20px;border-radius:14px;border:none;background:#2563eb;color:#fff;font-weight:700;cursor:pointer;transition:opacity 0.2s;}
+.promo-card button:hover{opacity:0.9;}
+.action-row{display:flex;gap:16px;flex-wrap:wrap;}
+.action-btn{flex:1;min-width:120px;padding:14px 18px;border-radius:16px;border:none;background:linear-gradient(135deg,#1d4ed8,#8b5cf6);color:#fff;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.action-btn:hover{transform:translateY(-1px);}
+.table-wrap{overflow-x:auto;}
+.balance-table{width:100%;border-collapse:collapse;margin-top:20px;}
+.balance-table th, .balance-table td{padding:16px 14px;text-align:left;}
+.balance-table th{font-size:0.78rem;text-transform:uppercase;color:var(--muted);letter-spacing:0.08em;border-bottom:1px solid rgba(255,255,255,0.08);}
+.balance-table tr{border-bottom:1px solid rgba(255,255,255,0.06);}
+.balance-table td{color:#fff;font-size:0.95rem;}
+.coin-name{display:flex;align-items:center;gap:12px;}
+.coin-logo-img{width:28px;height:28px;border-radius:50%;object-fit:cover;background:rgba(255,255,255,0.08);}
+.coin-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;background:rgba(255,255,255,0.08);}
+.status-pill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:0.78rem;color:#10b981;background:rgba(16,185,129,0.12);}
+@media(max-width:980px){.grid-2{grid-template-columns:1fr;}}
+@media(max-width:640px){nav{flex-direction:column;align-items:flex-start;} .tab-row{flex-wrap:wrap;} .nav-links{flex-wrap:wrap;gap:12px;} }
+
+/* ===== UNIVERSAL TOAST ===== */
+#gToast{position:fixed;top:16px;right:16px;display:flex;align-items:center;gap:10px;padding:13px 18px 13px 14px;border-radius:12px;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:600;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:99999;opacity:0;transform:translateY(-14px) scale(.96);transition:opacity .28s ease,transform .28s ease;pointer-events:none;min-width:220px;max-width:calc(100vw - 32px);}
+#gToast.g-success{background:rgba(5,46,22,.85);border:1px solid rgba(34,197,94,.45);color:#4ade80;}
+#gToast.g-error{background:rgba(69,10,10,.85);border:1px solid rgba(239,68,68,.45);color:#f87171;}
+#gToast.g-info{background:rgba(8,28,60,.85);border:1px solid rgba(99,179,237,.45);color:#93c5fd;}
+#gToast.g-show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+#gToast .g-icon{flex-shrink:0;width:18px;height:18px;}
+#gToast .g-msg{flex:1;line-height:1.4;}
+
+/* ====== SHARED NAV MOBILE ====== */
+@media(max-width:768px){
+  nav{padding:12px 16px!important;height:auto!important;flex-wrap:wrap;gap:8px;}
+  .nav-links{display:none!important;}
+  .logo{font-size:1rem!important;}
+  .logo-box{width:30px!important;height:30px!important;font-size:0.85rem!important;}
+  .nav-status span{padding:8px 12px!important;font-size:0.8rem!important;}
+  .logout-btn{padding:8px 12px!important;font-size:0.82rem!important;}
+  .page-wrap{margin-top:16px!important;padding:0 12px 48px!important;}
+  .tab-row{padding:10px!important;gap:6px!important;border-radius:12px!important;}
+  .tab{padding:8px 12px!important;font-size:0.82rem!important;}
+}
+/* ====== END SHARED NAV ====== */
+
+/* ====== MOBILE – profile.html ====== */
+@media(max-width:768px){
+  .grid-2{grid-template-columns:1fr!important;gap:16px!important;}
+  .panel{padding:18px 14px!important;border-radius:18px!important;}
+  .profile-top{flex-wrap:wrap;}
+  .profile-avatar{width:56px!important;height:56px!important;font-size:1.4rem!important;}
+  .profile-info .name{font-size:1rem!important;}
+  .balance-card{grid-template-columns:1fr!important;padding:18px!important;}
+  .balance-card .amount{font-size:2rem!important;}
+  .action-row{gap:10px!important;}
+  .action-btn{padding:11px 12px!important;font-size:0.85rem!important;}
+  .balance-table th,.balance-table td{padding:12px 10px!important;font-size:0.85rem!important;}
+  .promo-card{padding:16px!important;}
+}
+/* ====== END MOBILE profile.html ====== */
+
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><div class="logo-box">B</div>Nexus Live</a>
+  <div class="nav-links">
+    <a href="#">P2P</a>
+    <a href="index.html#swapSection">Swap</a>
+    <a href="support.html#support">Support</a>
+  </div>
+  <div class="nav-status">
+    <span>Wallet: <strong id="walletAmount">0$</strong></span>
+    <span id="profileNavName"></span>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </div>
+</nav>
+<div class="page-wrap">
+  <div class="tab-row">
+    <a href="profile.html" class="tab active">Overview</a>
+    <a href="deposit.html" class="tab">Deposit</a>
+    <a href="withdraw.html" class="tab">Withdraw</a>
+    <a href="transactions.html" class="tab">Transactions</a>
+    <a href="transfer.html" class="tab">Transfer</a>
+    <a href="settings.html" class="tab">Settings</a>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel profile-card">
+      <div class="profile-top">
+        <div class="profile-avatar" id="profileAvatar">N</div>
+        <div class="profile-info">
+          <span class="name" id="profileName">User Name</span>
+          <span class="meta" id="profileEmail">email@example.com</span>
+        </div>
+      </div>
+      <div class="balance-card">
+        <div>
+          <span>Total balance</span>
+          <div class="amount">0$</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:0.9rem;color:var(--muted);">Live</span></div>
+      </div>
+      <div class="promo-card">
+        <label>Use bonus promo code</label>
+        <input type="text" placeholder="Enter promo-code" />
+        <button>Activate</button>
+      </div>
+      <div class="action-row">
+        <button class="action-btn" onclick="window.location.href='deposit.html'">Deposit</button>
+        <button class="action-btn" onclick="window.location.href='withdraw.html'">Withdraw</button>
+        <button class="action-btn" onclick="window.location.href='transfer.html'">Transfer</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="balance-table">
+          <thead>
+            <tr>
+              <th>Coin</th>
+              <th>Balance</th>
+              <th>Equivalent</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/1/small/bitcoin.png" alt="Bitcoin" />Bitcoin BTC</div></td>
+              <td>0 BTC</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/279/small/ethereum.png" alt="Ethereum" />Ethereum ETH</div></td>
+              <td>0 ETH</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/325/small/Tether-logo.png" alt="Tether" />Tether USDT</div></td>
+              <td>0 USDT</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png?1644979850" alt="Binance Coin" />Binance Coin BNB</div></td>
+              <td>0 BNB</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png" alt="USD Coin" />USD Coin USDC</div></td>
+              <td>0 USDC</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png" alt="XRP" />XRP XRP</div></td>
+              <td>0 XRP</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/975/small/cardano.png" alt="Cardano" />Cardano ADA</div></td>
+              <td>0 ADA</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/4128/small/solana.png" alt="Solana" />Solana SOL</div></td>
+              <td>0 SOL</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/5/small/dogecoin.png" alt="Dogecoin" />Dogecoin DOGE</div></td>
+              <td>0 DOGE</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png" alt="Polygon" />Polygon MATIC</div></td>
+              <td>0 MATIC</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/12171/small/polkadot.png" alt="Polkadot" />Polkadot DOT</div></td>
+              <td>0 DOT</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/12559/small/AVA.png" alt="Avalanche" />Avalanche AVAX</div></td>
+              <td>0 AVAX</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png" alt="Chainlink" />Chainlink LINK</div></td>
+              <td>0 LINK</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/12504/small/uniswap-uni.png" alt="Uniswap" />Uniswap UNI</div></td>
+              <td>0 UNI</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/780/small/bitcoin-cash-logo.png" alt="Bitcoin Cash" />Bitcoin Cash BCH</div></td>
+              <td>0 BCH</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png" alt="Cosmos" />Cosmos ATOM</div></td>
+              <td>0 ATOM</td>
+              <td>0$</td>
+            </tr>
+            <tr>
+              <td><div class="coin-name"><img class="coin-logo-img" src="https://assets.coingecko.com/coins/images/9956/small/4943.png" alt="Dai" />Dai DAI</div></td>
+              <td>0 DAI</td>
+              <td>0$</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<script>
+// Use shared Firebase config and instances from firebase/firebase-config.js
+// `firebase/firebase-config.js` is already loaded before this script and
+// provides `auth` and `db` globals.
+
+const profileName = document.getElementById('profileName');
+const profileEmail = document.getElementById('profileEmail');
+const profileAvatar = document.getElementById('profileAvatar');
+const profileStatus = document.getElementById('profileNavName');
+const walletAmount = document.getElementById('walletAmount');
+const totalBalanceAmount = document.querySelector('.balance-card .amount');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// Check auth state
+auth.onAuthStateChanged((user) => {
+  if (!user) {
+    window.location.href = 'signin.html';
+    return;
+  }
+
+  const authName = user.displayName || user.email.split('@')[0];
+  const email = user.email;
+  profileEmail.textContent = email;
+
+  db.collection('users').doc(user.uid).get()
+    .then(doc => {
+      const data = doc.exists ? doc.data() : {};
+      const name = data.name || data.fullName || authName;
+      profileName.textContent = name;
+      profileAvatar.textContent = name.charAt(0).toUpperCase();
+      if (profileStatus) profileStatus.textContent = name;
+
+      const balance = data.balance || 0;
+      const balances = data.balances || {};
+      const walletUsd = Number(balance) || 0;
+      
+      const formatCrypto = (value, decimals = 6) => {
+        const amount = Number(value) || 0;
+        if (amount === 0) return '0';
+        return amount.toFixed(decimals).replace(/\.?0+$/, '');
+      };
+      const formatFiat = (value, decimals = 2) => {
+        const amount = Number(value) || 0;
+        if (amount === 0) return '0$';
+        return `${amount.toFixed(decimals)}$`;
+      };
+      
+      if (walletAmount) walletAmount.textContent = formatFiat(walletUsd, 2);
+
+      // Coin definitions and prices
+      const coins = [
+        { key: 'bitcoin', symbol: 'BTC', name: 'Bitcoin BTC', logo: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', coingeckoId: 'bitcoin', price: 67000, decimals: 6 },
+        { key: 'ethereum', symbol: 'ETH', name: 'Ethereum ETH', logo: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', coingeckoId: 'ethereum', price: 3500, decimals: 6 },
+        { key: 'usdt', symbol: 'USDT', name: 'Tether USDT', logo: 'https://assets.coingecko.com/coins/images/325/small/Tether-logo.png', coingeckoId: 'tether', price: 1, decimals: 2 },
+        { key: 'bnb', symbol: 'BNB', name: 'Binance Coin BNB', logo: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png?1644979850', coingeckoId: 'binancecoin', price: 600, decimals: 6 },
+        { key: 'usdc', symbol: 'USDC', name: 'USD Coin USDC', logo: 'https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png', coingeckoId: 'usd-coin', price: 1, decimals: 2 },
+        { key: 'xrp', symbol: 'XRP', name: 'XRP XRP', logo: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png', coingeckoId: 'ripple', price: 2.50, decimals: 4 },
+        { key: 'ada', symbol: 'ADA', name: 'Cardano ADA', logo: 'https://assets.coingecko.com/coins/images/975/small/cardano.png', coingeckoId: 'cardano', price: 1.10, decimals: 4 },
+        { key: 'sol', symbol: 'SOL', name: 'Solana SOL', logo: 'https://assets.coingecko.com/coins/images/4128/small/solana.png', coingeckoId: 'solana', price: 180, decimals: 4 },
+        { key: 'doge', symbol: 'DOGE', name: 'Dogecoin DOGE', logo: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png', coingeckoId: 'dogecoin', price: 0.35, decimals: 4 },
+        { key: 'matic', symbol: 'MATIC', name: 'Polygon MATIC', logo: 'https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png', coingeckoId: 'polygon', price: 1.20, decimals: 4 },
+        { key: 'dot', symbol: 'DOT', name: 'Polkadot DOT', logo: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png', coingeckoId: 'polkadot', price: 8.50, decimals: 4 },
+        { key: 'avax', symbol: 'AVAX', name: 'Avalanche AVAX', logo: 'https://assets.coingecko.com/coins/images/12559/small/AVA.png', coingeckoId: 'avalanche-2', price: 100, decimals: 4 },
+        { key: 'link', symbol: 'LINK', name: 'Chainlink LINK', logo: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png', coingeckoId: 'chainlink', price: 32, decimals: 4 }
+      ];
+
+      const rows = document.querySelectorAll('.balance-table tbody tr');
+      const renderBalances = () => {
+        let totalUsd = walletUsd;
+        rows.forEach((row, index) => {
+          const coin = coins[index];
+          if (!coin) return;
+          const amount = Number(balances[coin.key] || 0);
+          const fiat = amount * coin.price;
+          totalUsd += fiat;
+          row.innerHTML = 
+            `<td><div class="coin-name"><img class="coin-logo-img" src="${coin.logo}" alt="${coin.name}" />${coin.name}</div></td>` +
+            `<td>${formatCrypto(amount, coin.decimals)} ${coin.symbol}</td>` +
+            `<td>${formatFiat(fiat, 2)}</td>`;
+        });
+        if (totalBalanceAmount) totalBalanceAmount.textContent = formatFiat(totalUsd, 2);
+      };
+
+      const fetchLivePrices = async () => {
+        try {
+          const ids = coins.map(c => c.coingeckoId).filter(Boolean).join(',');
+          const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids)}&vs_currencies=usd`);
+          if (!response.ok) throw new Error('Price fetch failed');
+          const data = await response.json();
+          coins.forEach(coin => {
+            if (coin.coingeckoId && data[coin.coingeckoId] && typeof data[coin.coingeckoId].usd === 'number') {
+              coin.price = data[coin.coingeckoId].usd;
+            }
+          });
+        } catch (error) {
+          console.warn('Live price fetch failed, using fallback prices:', error);
+        }
+      };
+
+      fetchLivePrices().then(renderBalances).catch(renderBalances);
+      setInterval(() => fetchLivePrices().then(renderBalances).catch(() => {}), 30000);
+    })
+    .catch(() => {
+      if (walletAmount) walletAmount.textContent = '0$';
+      if (totalBalanceAmount) totalBalanceAmount.textContent = '0$';
+    });
+});
+
+// Logout handler
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', function() {
+    auth.signOut().then(() => {
+      localStorage.removeItem('cryptoUser');
+      window.location.href = 'index.html';
+    }).catch((error) => {
+      console.error('Logout error:', error);
+    });
+  });
+}
+</script>
+
+<div id="gToast">
+  <svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span class="g-msg"></span>
+</div>
+<script>
+(function(){var _t=null;window.showToast=function(msg,kind,dur){kind=kind||'success';dur=dur||3500;var t=document.getElementById('gToast');if(!t)return;var ico=t.querySelector('.g-icon'),sp=t.querySelector('.g-msg');sp.textContent=msg;if(kind==='error'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';}else if(kind==='info'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>';}else{ico.innerHTML='<polyline points="20 6 9 17 4 12"/>';}t.className='g-'+kind+' g-show';clearTimeout(_t);_t=setTimeout(function(){t.classList.remove('g-show');},dur);};})();</script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="firebase/firebase-config.js"></script>
+  <style>
+    body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#04040d;color:#e5e7eb;display:flex;align-items:center;justify-content:center;min-height:100vh}
+    .card{width:min(980px,100%);background:#0f1226;border:1px solid rgba(148,163,184,.12);border-radius:24px;box-shadow:0 28px 70px rgba(0,0,0,.35);overflow:hidden}
+    .header{padding:28px 32px;background:linear-gradient(135deg,rgba(59,130,246,.95),rgba(168,85,247,.9));color:#fff}
+    .header h1{margin:0;font-size:2rem;letter-spacing:-.02em}
+    .header p{margin:.75rem 0 0;color:rgba(255,255,255,.82);font-size:.95rem;max-width:640px;line-height:1.6}
+    .body{padding:28px 32px;display:grid;gap:20px}
+    .row{display:grid;gap:14px}
+    label{font-size:.82rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em}
+    input,button,textarea{font:inherit}
+    input,textarea{width:100%;padding:14px 16px;background:#11152f;border:1px solid rgba(148,163,184,.12);border-radius:14px;color:#e5e7eb;outline:none;transition:.2s}
+    input:focus,textarea:focus{border-color:rgba(59,130,246,.8);box-shadow:0 0 0 4px rgba(59,130,246,.12)}
+    button{padding:14px 16px;border:none;border-radius:14px;background:linear-gradient(135deg,#38bdf8,#a78bfa);color:#07101f;font-weight:700;cursor:pointer;transition:.2s}
+    button:hover{transform:translateY(-1px);box-shadow:0 14px 26px rgba(56,189,248,.16)}
+    .actions{display:flex;gap:12px;flex-wrap:wrap}
+    .status{min-height:22px;font-size:.95rem;line-height:1.4;color:#cbd5e1}
+    .status.error{color:#fca5a5}
+    .status.success{color:#86efac}
+    .panel{background:#0e1229;border:1px solid rgba(148,163,184,.08);border-radius:20px;padding:22px;display:grid;gap:18px}
+    .panel h2{margin:0;font-size:1.1rem;color:#f8fafc}
+    .panel .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .panel .field-grid.full{grid-template-columns:1fr}
+    .user-meta{display:grid;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:18px}
+    .user-meta div{display:flex;justify-content:space-between;font-size:.92rem;color:#cbd5e1}
+    .user-meta div span:first-child{color:#94a3b8}
+    .hidden{display:none !important}
+    @media(max-width:760px){.panel .field-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>Admin Panel</h1>
+      <p>This admin console uses Firebase Authentication and Firestore. Sign in with a dedicated admin account that has the <code>admin</code> custom claim.</p>
+    </div>
+    <div class="body">
+      <div id="loginSection" class="panel">
+        <h2>Admin Login</h2>
+        <div class="row"><label for="adminEmail">Admin email</label><input id="adminEmail" type="email" placeholder="admin@example.com" autocomplete="username" /></div>
+        <div class="row"><label for="adminPassword">Password</label><input id="adminPassword" type="password" placeholder="Password" autocomplete="current-password" /></div>
+        <div class="actions"><button id="adminSignIn" type="button">Sign In</button><button id="adminSignOut" type="button" class="hidden">Sign Out</button></div>
+        <div id="loginMsg" class="status"></div>
+      </div>
+
+      <div id="adminSection" class="panel hidden">
+        <div class="actions" style="align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <div><strong>Signed in as</strong> <span id="adminUserEmail"></span></div>
+          <button id="signOutButton">Sign Out</button>
+        </div>
+        <div class="row"><label for="userQuery">Search user by email or UID</label><input id="userQuery" placeholder="User email or UID" /></div>
+        <div class="actions"><button id="findUserBtn">Find User</button><button id="clearSelectionBtn" type="button">Clear</button></div>
+        <div id="adminStatus" class="status"></div>
+      </div>
+
+      <div id="userPanel" class="panel hidden">
+        <h2>Selected User</h2>
+        <div class="user-meta">
+          <div><span>Email</span><span id="selectedEmail">-</span></div>
+          <div><span>UID</span><span id="selectedUid">-</span></div>
+          <div><span>Name</span><span id="selectedName">-</span></div>
+          <div><span>Created</span><span id="selectedCreated">-</span></div>
+        </div>
+        <div class="field-grid">
+          <div class="row"><label for="usdBalance">USD Balance</label><input id="usdBalance" type="number" step="0.01" min="0" placeholder="0" /></div>
+          <div class="row"><label for="btcBalance">Bitcoin (BTC)</label><input id="btcBalance" type="number" step="0.000001" min="0" placeholder="0" /></div>
+          <div class="row"><label for="ethBalance">Ethereum (ETH)</label><input id="ethBalance" type="number" step="0.000001" min="0" placeholder="0" /></div>
+          <div class="row"><label for="usdtBalance">USDT</label><input id="usdtBalance" type="number" step="0.01" min="0" placeholder="0" /></div>
+          <div class="row"><label for="bnbBalance">Binance Coin (BNB)</label><input id="bnbBalance" type="number" step="0.000001" min="0" placeholder="0" /></div>
+          <div class="row"><label for="usdcBalance">USD Coin (USDC)</label><input id="usdcBalance" type="number" step="0.01" min="0" placeholder="0" /></div>
+          <div class="row"><label for="xrpBalance">XRP (XRP)</label><input id="xrpBalance" type="number" step="0.0001" min="0" placeholder="0" /></div>
+          <div class="row"><label for="adaBalance">Cardano (ADA)</label><input id="adaBalance" type="number" step="0.0001" min="0" placeholder="0" /></div>
+          <div class="row"><label for="solBalance">Solana (SOL)</label><input id="solBalance" type="number" step="0.0001" min="0" placeholder="0" /></div>
+          <div class="row"><label for="dogeBalance">Dogecoin (DOGE)</label><input id="dogeBalance" type="number" step="0.0001" min="0" placeholder="0" /></div>
+          <div class="row"><label for="maticBalance">Polygon (MATIC)</label><input id="maticBalance" type="number" step="0.0001" min="0" placeholder="0" /></div>
+          <div class="row"><label for="dotBalance">Polkadot (DOT)</label><input id="dotBalance" type="number" step="0.0001" min="0" placeholder="0" /></div>
+          <div class="row"><label for="avaxBalance">Avalanche (AVAX)</label><input id="avaxBalance" type="number" step="0.0001" min="0" placeholder="0" /></div>
+          <div class="row"><label for="linkBalance">Chainlink (LINK)</label><input id="linkBalance" type="number" step="0.0001" min="0" placeholder="0" /></div>
+        </div>
+        <div class="actions"><button id="saveUserBtn">Save Changes</button></div>
+        <div id="userMsg" class="status"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof firebase === 'undefined') {
+        const loginMsg = document.getElementById('loginMsg');
+        if (loginMsg) {
+          loginMsg.textContent = 'Firebase SDK failed to load. Check browser console.';
+          loginMsg.className = 'status error';
+        }
+        console.error('Firebase SDK is not loaded.');
+        return;
+      }
+
+      // Use a separate named Firebase app for admin auth/storage so admin sign-in does not override normal user sessions.
+      const adminApp = firebase.apps.find(app => app.name === 'admin') || firebase.initializeApp(firebaseConfig, 'admin');
+      const auth = firebase.auth(adminApp);
+      const db = firebase.firestore(adminApp);
+      const adminEmailEl = document.getElementById('adminEmail');
+      const adminPasswordEl = document.getElementById('adminPassword');
+      const loginMsg = document.getElementById('loginMsg');
+      const adminSignIn = document.getElementById('adminSignIn');
+      const signOutButton = document.getElementById('signOutButton');
+      const loginSection = document.getElementById('loginSection');
+      const adminSection = document.getElementById('adminSection');
+      const userPanel = document.getElementById('userPanel');
+      const adminUserEmail = document.getElementById('adminUserEmail');
+      const adminStatus = document.getElementById('adminStatus');
+      const userMsg = document.getElementById('userMsg');
+      const userQuery = document.getElementById('userQuery');
+      const findUserBtn = document.getElementById('findUserBtn');
+      const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+      const selectedEmail = document.getElementById('selectedEmail');
+      const selectedUid = document.getElementById('selectedUid');
+      const selectedName = document.getElementById('selectedName');
+      const selectedCreated = document.getElementById('selectedCreated');
+      const usdBalance = document.getElementById('usdBalance');
+      const btcBalance = document.getElementById('btcBalance');
+      const ethBalance = document.getElementById('ethBalance');
+      const usdtBalance = document.getElementById('usdtBalance');
+      const bnbBalance = document.getElementById('bnbBalance');
+      const usdcBalance = document.getElementById('usdcBalance');
+      const xrpBalance = document.getElementById('xrpBalance');
+      const adaBalance = document.getElementById('adaBalance');
+      const solBalance = document.getElementById('solBalance');
+      const dogeBalance = document.getElementById('dogeBalance');
+      const maticBalance = document.getElementById('maticBalance');
+      const dotBalance = document.getElementById('dotBalance');
+      const avaxBalance = document.getElementById('avaxBalance');
+      const linkBalance = document.getElementById('linkBalance');
+      const saveUserBtn = document.getElementById('saveUserBtn');
+
+      let currentUserDoc = null;
+      let prevBalances = {};
+      let prevUsdBalance = 0;
+
+      function show(element){ element.classList.remove('hidden'); }
+      function hide(element){ element.classList.add('hidden'); }
+      function setMessage(el, text, type='info'){ el.textContent = text || ''; el.className = type === 'error' ? 'status error' : type === 'success' ? 'status success' : 'status'; }
+      function resetUserPanel(){ currentUserDoc = null; prevBalances = {}; prevUsdBalance = 0; selectedEmail.textContent = '-'; selectedUid.textContent = '-'; selectedName.textContent = '-'; selectedCreated.textContent = '-'; usdBalance.value = ''; btcBalance.value = ''; ethBalance.value = ''; usdtBalance.value = ''; bnbBalance.value = ''; usdcBalance.value = ''; xrpBalance.value = ''; adaBalance.value = ''; solBalance.value = ''; dogeBalance.value = ''; maticBalance.value = ''; dotBalance.value = ''; avaxBalance.value = ''; linkBalance.value = ''; hide(userPanel); }
+
+      async function showAdmin(user){
+        adminUserEmail.textContent = user.email || 'admin';
+        setMessage(loginMsg, 'Signed in as admin.');
+        hide(loginSection);
+        show(adminSection);
+        show(signOutButton);
+        resetUserPanel();
+      }
+
+      function showLogin(){ hide(adminSection); hide(userPanel); hide(signOutButton); show(loginSection); setMessage(adminStatus, ''); setMessage(userMsg, ''); }
+
+      auth.onAuthStateChanged(async (user) => {
+        if (!user){ showLogin(); return; }
+        try {
+          const idToken = await user.getIdTokenResult(true);
+          if (!idToken.claims?.admin) {
+            await auth.signOut();
+            showLogin();
+            setMessage(loginMsg, 'This account is not an admin. Use a dedicated admin user.', 'error');
+            return;
+          }
+          showAdmin(user);
+        } catch (error) {
+          console.error(error);
+          await auth.signOut();
+          showLogin();
+          setMessage(loginMsg, 'Unable to verify admin claims. Please try again.', 'error');
+        }
+      });
+
+      adminSignIn.addEventListener('click', async () => {
+        const email = adminEmailEl.value.trim();
+        const password = adminPasswordEl.value;
+        if (!email || !password){ setMessage(loginMsg, 'Enter admin email and password', 'error'); return; }
+        setMessage(loginMsg, 'Signing in...');
+        try {
+          console.log('Admin sign-in attempt for', email);
+          await auth.signInWithEmailAndPassword(email, password);
+        } catch (error) {
+          console.error('Admin sign-in failed', error);
+          setMessage(loginMsg, error.message || 'Sign-in failed', 'error');
+        }
+      });
+
+      signOutButton.addEventListener('click', async () => { await auth.signOut(); showLogin(); setMessage(loginMsg, 'Signed out', 'info'); });
+
+      findUserBtn.addEventListener('click', async () => {
+        const query = userQuery.value.trim();
+        if (!query){ setMessage(adminStatus, 'Enter an email or UID to find a user', 'error'); return; }
+        setMessage(adminStatus, 'Searching...');
+        try {
+          let docRef = db.collection('users').doc(query);
+          let doc = await docRef.get();
+          if (!doc.exists){
+            const qSnap = await db.collection('users').where('email', '==', query).limit(1).get();
+            if (!qSnap.empty) doc = qSnap.docs[0];
+          }
+          if (!doc || !doc.exists){ setMessage(adminStatus, 'User not found', 'error'); resetUserPanel(); return; }
+          currentUserDoc = doc;
+          const data = doc.data() || {};
+          prevBalances = Object.assign({}, data.balances || {});
+          prevUsdBalance = Number(data.balance || 0);
+          selectedEmail.textContent = data.email || '-';
+          selectedUid.textContent = doc.id;
+          selectedName.textContent = data.name || '-';
+          selectedCreated.textContent = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString() : '-';
+          usdBalance.value = data.balance ?? 0;
+          btcBalance.value = data.balances?.bitcoin ?? 0;
+          ethBalance.value = data.balances?.ethereum ?? 0;
+          usdtBalance.value = data.balances?.usdt ?? 0;
+          bnbBalance.value = data.balances?.bnb ?? 0;
+          usdcBalance.value = data.balances?.usdc ?? 0;
+          xrpBalance.value = data.balances?.xrp ?? 0;
+          adaBalance.value = data.balances?.ada ?? 0;
+          solBalance.value = data.balances?.sol ?? 0;
+          dogeBalance.value = data.balances?.doge ?? 0;
+          maticBalance.value = data.balances?.matic ?? 0;
+          dotBalance.value = data.balances?.dot ?? 0;
+          avaxBalance.value = data.balances?.avax ?? 0;
+          linkBalance.value = data.balances?.link ?? 0;
+          show(userPanel);
+          setMessage(adminStatus, 'User loaded. Edit balances and save.', 'success');
+        } catch (error) {
+          console.error('User search failed', error);
+          setMessage(adminStatus, 'Search failed. Check console for details.', 'error');
+        }
+      });
+
+      clearSelectionBtn.addEventListener('click', () => { userQuery.value = ''; resetUserPanel(); setMessage(adminStatus, 'Selection cleared.', 'info'); });
+
+      saveUserBtn.addEventListener('click', async () => {
+        if (!currentUserDoc){ setMessage(userMsg, 'Select a user first', 'error'); return; }
+        const uid = currentUserDoc.id;
+        const payload = {
+          balances: {
+            bitcoin: parseFloat(btcBalance.value) || 0,
+            ethereum: parseFloat(ethBalance.value) || 0,
+            usdt: parseFloat(usdtBalance.value) || 0,
+            bnb: parseFloat(bnbBalance.value) || 0,
+            usdc: parseFloat(usdcBalance.value) || 0,
+            xrp: parseFloat(xrpBalance.value) || 0,
+            ada: parseFloat(adaBalance.value) || 0,
+            sol: parseFloat(solBalance.value) || 0,
+            doge: parseFloat(dogeBalance.value) || 0,
+            matic: parseFloat(maticBalance.value) || 0,
+            dot: parseFloat(dotBalance.value) || 0,
+            avax: parseFloat(avaxBalance.value) || 0,
+            link: parseFloat(linkBalance.value) || 0
+          },
+          balance: parseFloat(usdBalance.value) || 0,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        setMessage(userMsg, 'Saving changes...');
+        try {
+          await db.collection('users').doc(uid).set(payload, {merge:true});
+
+          const diffs = [];
+          const balanceItems = [
+            {key:'bitcoin', symbol:'BTC', logo:'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', color:'#f7931a'},
+            {key:'ethereum', symbol:'ETH', logo:'https://assets.coingecko.com/coins/images/279/small/ethereum.png', color:'#627eea'},
+            {key:'usdt', symbol:'USDT', logo:'https://assets.coingecko.com/coins/images/325/small/Tether-logo.png', color:'#26a17b'},
+            {key:'bnb', symbol:'BNB', logo:'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png?1644979850', color:'#f3ba2f'},
+            {key:'usdc', symbol:'USDC', logo:'https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png', color:'#2775ca'},
+            {key:'xrp', symbol:'XRP', logo:'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png', color:'#25a8e0'},
+            {key:'ada', symbol:'ADA', logo:'https://assets.coingecko.com/coins/images/975/small/cardano.png', color:'#0033ad'},
+            {key:'sol', symbol:'SOL', logo:'https://assets.coingecko.com/coins/images/4128/small/solana.png', color:'#00ffa3'},
+            {key:'doge', symbol:'DOGE', logo:'https://assets.coingecko.com/coins/images/5/small/dogecoin.png', color:'#c2a633'},
+            {key:'matic', symbol:'MATIC', logo:'https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png', color:'#8247e5'},
+            {key:'dot', symbol:'DOT', logo:'https://assets.coingecko.com/coins/images/12171/small/polkadot.png', color:'#e6007a'},
+            {key:'avax', symbol:'AVAX', logo:'https://assets.coingecko.com/coins/images/12559/small/AVA.png', color:'#e84142'},
+            {key:'link', symbol:'LINK', logo:'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png', color:'#2a5ada'}
+          ];
+
+          balanceItems.forEach(item => {
+            const previous = Number(prevBalances[item.key] || 0);
+            const current = Number(payload.balances[item.key] || 0);
+            const diff = current - previous;
+            if (diff === 0) return;
+            diffs.push({
+              type: diff > 0 ? 'deposit' : 'withdraw',
+              coinSymbol: item.symbol,
+              amount: Math.abs(diff),
+              address: 'Admin adjustment',
+              status: 'Completed',
+              hash: `admin-${item.key}-${Date.now()}`,
+              time: firebase.firestore.FieldValue.serverTimestamp(),
+              coinLogo: item.logo,
+              coinColor: item.color
+            });
+          });
+
+          if (diffs.length > 0) {
+            const batch = db.batch();
+            const txCollection = db.collection('users').doc(uid).collection('transactions');
+            diffs.forEach(record => {
+              const txDoc = txCollection.doc();
+              batch.set(txDoc, record);
+            });
+            await batch.commit();
+          }
+
+          prevBalances = Object.assign({}, payload.balances);
+          prevUsdBalance = Number(payload.balance);
+          setMessage(userMsg, 'User balances updated successfully.', 'success');
+        } catch (error) {
+          console.error('Save failed', error);
+          const message = error?.message ? `Failed to save changes: ${error.message}` : 'Failed to save changes.';
+          setMessage(userMsg, message, 'error');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

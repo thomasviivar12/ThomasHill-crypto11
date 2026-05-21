@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus | Settings</title>
+<link rel="icon" type="Image/png" href="logo/nexus_logo-only.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCC39kwMyETNvaHY-KezEKkOZV427s60vs",
+  authDomain: "adminpanel-55a5c.firebaseapp.com",
+  projectId: "adminpanel-55a5c",
+  storageBucket: "adminpanel-55a5c.firebasestorage.app",
+  messagingSenderId: "356063021629",
+  appId: "1:356063021629:web:d980b168b69b1de701b854",
+  measurementId: "G-Q5P64THN0G"
+};
+if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#000;--panel:#10131f;--panel2:#0e1220;--input:#000;
+  --text:#e2e8f0;--muted:#8b95ac;--cyan:#00e5ff;--purple:#a855f7;--pink:#ec4899;
+  --green:#22c55e;--red:#ef4444;--border:rgba(255,255,255,0.08);
+}
+body{font-family:'Inter',sans-serif;background:#000;color:var(--text);min-height:100vh;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;position:sticky;top:0;background:rgba(0,0,0,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;font-weight:800;text-decoration:none;font-size:1.1rem;}
+.logo-box{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:800;color:#000;font-size:1rem;}
+.nav-links{display:flex;gap:24px;align-items:center;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:0.92rem;}
+.nav-links a:hover{color:#fff;}
+.nav-status{display:flex;gap:12px;align-items:center;font-size:0.9rem;color:var(--muted);}
+.nav-status span{padding:10px 16px;border:1px solid rgba(255,255,255,0.08);border-radius:999px;}
+.logout-btn{padding:10px 16px;border:none;border-radius:999px;background:rgba(255,255,255,0.1);color:#fff;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+.logout-btn:hover{background:rgba(255,255,255,0.18);}
+
+.page-wrap{max-width:1240px;margin:32px auto;padding:0 24px 60px;}
+.tab-row{display:flex;flex-wrap:wrap;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;justify-content:center;margin-bottom:32px;}
+.tab{padding:10px 18px;border-radius:12px;color:var(--muted);text-decoration:none;font-size:0.92rem;}
+.tab.active,.tab:hover{background:rgba(255,255,255,0.06);color:#fff;}
+
+.welcome-row{display:flex;justify-content:space-between;align-items:center;margin:8px 0 22px;padding:0 8px;}
+.welcome-row h2{font-weight:500;font-size:1.15rem;color:#cbd5e1;}
+.welcome-row h2 b{color:#3b82f6;font-weight:700;}
+.welcome-row a{color:#3b82f6;text-decoration:none;font-weight:600;font-size:0.95rem;}
+
+.alert-2fa{position:relative;display:flex;align-items:center;gap:18px;padding:22px 26px 22px 110px;border-radius:16px;background:linear-gradient(90deg,#0b3a4d 0%,#0d5050 100%);margin-bottom:28px;}
+.shield{position:absolute;left:24px;top:50%;transform:translateY(-50%);width:78px;height:90px;background:linear-gradient(180deg,#10b981,#059669);clip-path:polygon(50% 0,100% 18%,100% 65%,50% 100%,0 65%,0 18%);display:flex;align-items:center;justify-content:center;color:#fff;font-size:2rem;}
+.alert-2fa p{flex:1;color:#fff;font-size:1rem;}
+.alert-2fa p b{font-weight:700;}
+.alert-2fa button{padding:12px 30px;border-radius:10px;border:none;background:#1e1b4b;color:#fff;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.95rem;}
+.alert-2fa button:hover{background:#312e81;}
+
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:22px;}
+.panel h3{font-size:1.1rem;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);font-weight:700;}
+.verify-row{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;}
+.verify-row p{color:#7c83b8;font-size:0.95rem;line-height:1.55;max-width:760px;}
+.verify-btn{padding:12px 24px;border-radius:8px;border:none;background:#06b6d4;color:#fff;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:14px;}
+.verify-btn:hover{background:#0891b2;}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr;}}
+
+label{display:block;color:var(--muted);font-size:0.88rem;margin-bottom:8px;}
+.input{width:100%;padding:14px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:#000;color:#fff;font-family:'Inter',sans-serif;font-size:0.95rem;outline:none;}
+.input:focus{border-color:rgba(0,229,255,0.4);}
+.field{margin-bottom:16px;}
+
+.user-mini{display:flex;align-items:center;gap:14px;margin:6px 0 14px;}
+.avatar{width:44px;height:44px;border-radius:50%;background:#1f2937;display:flex;align-items:center;justify-content:center;color:#94a3b8;}
+.user-mini .uname{font-weight:700;color:#fff;}
+.user-mini .ufile{font-size:0.78rem;color:var(--muted);}
+
+.upload-row{display:flex;gap:0;margin-bottom:16px;}
+.upload-row .input{border-top-right-radius:0;border-bottom-right-radius:0;}
+.upload-row button{padding:0 26px;border:none;border-top-right-radius:8px;border-bottom-right-radius:8px;background:#6366f1;color:#fff;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+.upload-row button:hover{background:#4f46e5;}
+
+.save-btn{padding:11px 28px;border-radius:8px;border:none;background:var(--green);color:#fff;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.95rem;}
+.save-btn:hover{background:#16a34a;}
+
+.toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;background:#1e293b;color:#fff;border-radius:10px;border:1px solid var(--border);opacity:0;transform:translateY(10px);transition:all .25s;z-index:1000;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.success{border-color:rgba(34,197,94,0.4);}
+.toast.error{border-color:rgba(239,68,68,0.4);}
+
+/* ===== UNIVERSAL TOAST ===== */
+#gToast{position:fixed;top:16px;right:16px;display:flex;align-items:center;gap:10px;padding:13px 18px 13px 14px;border-radius:12px;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:600;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:99999;opacity:0;transform:translateY(-14px) scale(.96);transition:opacity .28s ease,transform .28s ease;pointer-events:none;min-width:220px;max-width:calc(100vw - 32px);}
+#gToast.g-success{background:rgba(5,46,22,.85);border:1px solid rgba(34,197,94,.45);color:#4ade80;}
+#gToast.g-error{background:rgba(69,10,10,.85);border:1px solid rgba(239,68,68,.45);color:#f87171;}
+#gToast.g-info{background:rgba(8,28,60,.85);border:1px solid rgba(99,179,237,.45);color:#93c5fd;}
+#gToast.g-show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+#gToast .g-icon{flex-shrink:0;width:18px;height:18px;}
+#gToast .g-msg{flex:1;line-height:1.4;}
+
+/* ====== SHARED NAV MOBILE ====== */
+@media(max-width:768px){
+  nav{padding:12px 16px!important;height:auto!important;flex-wrap:wrap;gap:8px;}
+  .nav-links{display:none!important;}
+  .logo{font-size:1rem!important;}
+  .logo-box{width:30px!important;height:30px!important;font-size:0.85rem!important;}
+  .nav-status span{padding:8px 12px!important;font-size:0.8rem!important;}
+  .logout-btn{padding:8px 12px!important;font-size:0.82rem!important;}
+  .page-wrap{margin-top:16px!important;padding:0 12px 48px!important;}
+  .tab-row{padding:10px!important;gap:6px!important;border-radius:12px!important;}
+  .tab{padding:8px 12px!important;font-size:0.82rem!important;}
+}
+/* ====== END SHARED NAV ====== */
+
+/* ====== MOBILE – settings.html ====== */
+@media(max-width:768px){
+  .alert-2fa{padding:16px 14px 16px 14px!important;flex-direction:column!important;gap:12px!important;}
+  .shield{display:none!important;}
+  .alert-2fa p{font-size:0.9rem!important;}
+  .alert-2fa button{width:100%!important;padding:10px!important;}
+
+  .panel{padding:16px 14px!important;}
+  .panel h3{font-size:1rem!important;}
+  .grid-2{grid-template-columns:1fr!important;}
+  .input{font-size:0.9rem!important;padding:12px 14px!important;}
+  .save-btn{width:100%!important;padding:12px!important;}
+  .upload-row{flex-direction:column!important;}
+  .upload-row .input{border-radius:8px!important;}
+  .upload-row button{border-radius:8px!important;padding:12px!important;margin-top:6px!important;}
+
+  .verify-row{flex-direction:column!important;gap:12px!important;}
+  .verify-btn{width:100%!important;}
+  .welcome-row{flex-direction:column!important;align-items:flex-start!important;gap:8px!important;}
+}
+/* ====== END MOBILE settings.html ====== */
+
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><div class="logo-box">N</div>Nexus Live</a>
+  <div class="nav-links">
+    <a href="#">P2P</a>
+    <a href="index.html#swapSection">Swap</a>
+    <a href="#">Support</a>
+  </div>
+  <div class="nav-status">
+    <span>Wallet: <strong id="walletAmount">0 USD</strong></span>
+    <span id="profileNavName"></span>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="tab-row">
+    <a href="profile.html" class="tab">Overview</a>
+    <a href="deposit.html" class="tab">Deposit</a>
+    <a href="withdraw.html" class="tab">Withdraw</a>
+    <a href="transactions.html" class="tab">Transactions</a>
+    <a href="transfer.html" class="tab">Transfer</a>
+    <a href="settings.html" class="tab active">Settings</a>
+  </div>
+
+  <div class="welcome-row">
+    <h2>Welcome Back, <b id="welcomeName">user</b></h2>
+    <a href="profile.html">Back to Wallet</a>
+  </div>
+
+  <div class="alert-2fa">
+    <div class="shield">🔒</div>
+    <p><b>Attention!</b> Your account is not secure enough, please enable two-factor authentication</p>
+    <button onclick="toast('2FA setup coming soon','success')">Enable</button>
+  </div>
+
+  <div class="panel">
+    <h3>Account Verification</h3>
+    <div class="verify-row">
+      <div>
+        <p>To increase user limits, you need to pass the verification of a Intermediate user or a Advanced user, you must provide personal information, a photo of an identity document, and a photo of your face.</p>
+        <button class="verify-btn" onclick="toast('Verification page coming soon','success')">Verification page</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="panel">
+      <div class="field">
+        <label>Your Username</label>
+        <input id="usernameInput" class="input" placeholder="username" />
+      </div>
+      <div class="user-mini">
+        <div class="avatar" id="avatarMini">👤</div>
+        <div>
+          <div class="uname" id="miniName">user</div>
+          <div class="ufile">Max file size is 1 mb</div>
+        </div>
+      </div>
+      <div class="upload-row">
+        <input id="photoInput" class="input" placeholder="Change Photo" readonly />
+        <button onclick="document.getElementById('photoFile').click()">Upload</button>
+        <input type="file" id="photoFile" accept="image/*" style="display:none" />
+      </div>
+      <button class="save-btn" id="saveUserBtn">Save</button>
+    </div>
+
+    <div class="panel">
+      <div class="field">
+        <label>Phone number</label>
+        <input id="phoneInput" class="input" placeholder="Phone number" />
+      </div>
+      <div class="field">
+        <label>Old Password</label>
+        <input id="oldPass" type="password" class="input" placeholder="••••••••" />
+      </div>
+      <div class="field">
+        <label>New Password</label>
+        <input id="newPass" type="password" class="input" placeholder="••••••••" />
+      </div>
+      <button class="save-btn" id="savePassBtn">Save</button>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:22px;">
+    <h3>Personal Information</h3>
+    <div class="grid-2">
+      <div class="field"><label>Your Name</label><input id="piName" class="input" placeholder="Enter Name" /></div>
+      <div class="field"><label>Current email</label><input id="piEmail" class="input" placeholder="email@example.com" readonly /></div>
+      <div class="field"><label>Date of birth</label><input id="piDob" class="input" placeholder="DD-MM-YYYY" /></div>
+      <div class="field"><label>Present Address</label><input id="piAddr" class="input" placeholder="Present address" /></div>
+      <div class="field"><label>Permanent Address</label><input id="piPerm" class="input" placeholder="Permanent address" /></div>
+      <div class="field"><label>City</label><input id="piCity" class="input" placeholder="City" /></div>
+      <div class="field"><label>Postal Code</label><input id="piPostal" class="input" placeholder="Postal code" /></div>
+      <div class="field"><label>Country</label>
+        <select id="piCountry" class="input">
+          <option value="">Select</option>
+          <option>United States</option><option>United Kingdom</option><option>Canada</option>
+          <option>Germany</option><option>France</option><option>India</option>
+          <option>Japan</option><option>Australia</option><option>Brazil</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <button class="save-btn" id="savePIBtn" style="margin-top:8px;">Save</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// auth and db already initialized above
+let currentUser = null;
+
+function toast(msg, kind='success'){
+  showToast(msg, kind);
+}
+
+const logoutBtn = document.getElementById('logoutBtn');
+if(logoutBtn){
+  logoutBtn.addEventListener('click', function(){
+    auth.signOut().then(()=>{
+      try{ localStorage.removeItem('cryptoUser'); }catch(e){}
+      window.location.href = 'index.html';
+    }).catch((err)=>{
+      console.error('Logout error:', err);
+      try{ localStorage.removeItem('cryptoUser'); }catch(e){}
+      window.location.href = 'index.html';
+    });
+  });
+}
+
+auth.onAuthStateChanged(async (user)=>{
+  if(!user){ location.href='signin.html'; return; }
+  currentUser = user;
+
+  // Immediate fallback from auth so the UI never shows blank
+  const fallback = user.displayName || (user.email ? user.email.split('@')[0] : 'user');
+  document.getElementById('welcomeName').textContent = fallback;
+  document.getElementById('miniName').textContent = fallback;
+  document.getElementById('profileNavName').textContent = fallback;
+
+  let data = {};
+  try{
+    const snap = await db.collection('users').doc(user.uid).get();
+    data = snap.exists ? snap.data() : {};
+  }catch(e){ console.error('Firestore read error:', e); }
+
+  const username = data.username || fallback;
+  const regName  = (data.personal && data.personal.name) || data.name || data.fullName || user.displayName || username;
+  document.getElementById('welcomeName').textContent = regName;
+  document.getElementById('miniName').textContent = regName;
+  document.getElementById('profileNavName').textContent = regName;
+  document.getElementById('usernameInput').value = username;
+  document.getElementById('piEmail').value = user.email || '';
+
+  if(data.phone) document.getElementById('phoneInput').value = data.phone;
+  if(data.walletUSD!=null) document.getElementById('walletAmount').textContent = data.walletUSD + ' USD';
+  else if(data.balance!=null) document.getElementById('walletAmount').textContent = Number(data.balance).toFixed(2) + ' USD';
+
+  const pi = data.personal || {};
+  document.getElementById('piName').value = pi.name || data.name || '';
+  document.getElementById('piDob').value = pi.dob || '';
+  document.getElementById('piAddr').value = pi.address || '';
+  document.getElementById('piPerm').value = pi.permanent || '';
+  document.getElementById('piCity').value = pi.city || '';
+  document.getElementById('piPostal').value = pi.postal || '';
+  if(pi.country) document.getElementById('piCountry').value = pi.country;
+});
+
+document.getElementById('saveUserBtn').onclick = async ()=>{
+  if(!currentUser) return;
+  const username = document.getElementById('usernameInput').value.trim();
+  if(!username) return toast('Username required','error');
+  try{
+    await db.collection('users').doc(currentUser.uid).set({username},{merge:true});
+    document.getElementById('welcomeName').textContent = username;
+    document.getElementById('miniName').textContent = username;
+    document.getElementById('profileNavName').textContent = username;
+    toast('Username saved');
+  }catch(e){ toast(e.message,'error'); }
+};
+
+document.getElementById('photoFile').onchange = (e)=>{
+  const f = e.target.files[0];
+  if(f) document.getElementById('photoInput').value = f.name;
+};
+
+document.getElementById('savePassBtn').onclick = async ()=>{
+  if(!currentUser) return;
+  const phone = document.getElementById('phoneInput').value.trim();
+  const oldP = document.getElementById('oldPass').value;
+  const newP = document.getElementById('newPass').value;
+  try{
+    if(phone) await db.collection('users').doc(currentUser.uid).set({phone},{merge:true});
+    if(oldP && newP){
+      const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, oldP);
+      await currentUser.reauthenticateWithCredential(cred);
+      await currentUser.updatePassword(newP);
+      document.getElementById('oldPass').value='';
+      document.getElementById('newPass').value='';
+    }
+    toast('Saved');
+  }catch(e){ toast(e.message,'error'); }
+};
+
+document.getElementById('savePIBtn').onclick = async ()=>{
+  if(!currentUser) return;
+  const personal = {
+    name: document.getElementById('piName').value.trim(),
+    dob: document.getElementById('piDob').value.trim(),
+    address: document.getElementById('piAddr').value.trim(),
+    permanent: document.getElementById('piPerm').value.trim(),
+    city: document.getElementById('piCity').value.trim(),
+    postal: document.getElementById('piPostal').value.trim(),
+    country: document.getElementById('piCountry').value,
+  };
+  try{
+    await db.collection('users').doc(currentUser.uid).set({personal},{merge:true});
+    toast('Personal info saved');
+  }catch(e){ toast(e.message,'error'); }
+};
+</script>
+
+<div id="gToast">
+  <svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span class="g-msg"></span>
+</div>
+<script>
+(function(){var _t=null;window.showToast=function(msg,kind,dur){kind=kind||'success';dur=dur||3500;var t=document.getElementById('gToast');if(!t)return;var ico=t.querySelector('.g-icon'),sp=t.querySelector('.g-msg');sp.textContent=msg;if(kind==='error'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';}else if(kind==='info'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>';}else{ico.innerHTML='<polyline points="20 6 9 17 4 12"/>';}t.className='g-'+kind+' g-show';clearTimeout(_t);_t=setTimeout(function(){t.classList.remove('g-show');},dur);};})();</script>
+</body>
+</html>

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus | Transfer</title>
+<link rel="icon" type="Image/png" href="logo/nexus_logo-only.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#080810;--bg2:#0d0d1a;--bg3:#11121f;--panel:#11121f;--text:#e2e8f0;--muted:#8b95ac;--cyan:#00e5ff;--purple:#a855f7;--green:#22c55e;--red:#ef4444;--border:rgba(255,255,255,0.08);}
+body{font-family:'Inter',sans-serif;background:linear-gradient(180deg,#05050b 0%,#0a0b18 100%);color:var(--text);min-height:100vh;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;position:sticky;top:0;background:rgba(8,8,16,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;font-weight:800;text-decoration:none;font-size:1rem;}
+.logo-box{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:800;color:#000;font-size:1rem;}
+.nav-links{display:flex;gap:24px;align-items:center;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:0.92rem;transition:color 0.2s;}
+.nav-links a:hover{color:#fff;}
+.nav-status{display:flex;gap:12px;align-items:center;font-size:0.9rem;color:var(--muted);}
+.nav-status span{padding:10px 16px;border:1px solid rgba(255,255,255,0.08);border-radius:999px;}
+.logout-btn{padding:10px 16px;border:none;border-radius:999px;background:rgba(255,255,255,0.1);color:#fff;font-weight:600;cursor:pointer;transition:background 0.2s;font-family:'Inter',sans-serif;}
+.logout-btn:hover{background:rgba(255,255,255,0.18);}
+.page-wrap{max-width:920px;margin:32px auto;padding:0 24px 60px;}
+.tab-row{display:flex;flex-wrap:wrap;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;justify-content:center;margin-bottom:32px;}
+.tab{padding:10px 18px;border-radius:12px;color:var(--muted);text-decoration:none;font-size:0.92rem;transition:all 0.2s;}
+.tab.active,.tab:hover{background:rgba(255,255,255,0.06);color:#fff;}
+.panel{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:24px;padding:32px;box-shadow:0 30px 80px rgba(0,0,0,0.22);}
+.panel h1{font-size:1.8rem;margin-bottom:10px;}
+.panel p{color:var(--muted);margin-bottom:28px;}
+.form-row{display:grid;gap:18px;}
+.form-group{display:flex;flex-direction:column;gap:10px;}
+.form-group label{font-size:0.95rem;color:#fff;}
+.form-group input, .form-group select{width:100%;padding:16px 18px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#fff;font-size:0.95rem;outline:none;}
+.form-group select{appearance:none;background-image:url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" fill="%23fff" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>');background-repeat:no-repeat;background-position:right 16px center;background-size:14px;}
+.select-with-icon{display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);}
+.select-with-icon img{width:40px;height:40px;border-radius:50%;background:#0d1120;object-fit:contain;border:1px solid rgba(255,255,255,0.08);padding:4px;}
+.coin-fallback{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.95rem;font-weight:700;letter-spacing:0.03em;}
+.select-with-icon select{flex:1;background:transparent;border:none;padding:14px 10px 14px 0;color:#fff;outline:none;cursor:pointer;-webkit-appearance:none;-moz-appearance:none;appearance:none;}
+.select-with-icon select option{color:#111 !important; background:#fff !important;}
+.select-with-icon select optgroup{color:#111 !important;}
+.select-with-icon select::-ms-expand{display:none;}
+.select-with-icon:hover{border-color:rgba(0,229,255,0.25);}
+.select-with-icon:focus-within{border-color:rgba(0,229,255,0.4);}
+.custom-coin-select{position:relative;}
+.custom-coin-trigger{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);cursor:pointer;transition:border-color 0.2s,background 0.2s;}
+.custom-coin-trigger:hover{border-color:rgba(0,229,255,0.25);background:rgba(255,255,255,0.08);}
+.custom-coin-trigger.open{border-color:rgba(0,229,255,0.4);}
+.coin-icon-shell{display:flex;align-items:center;justify-content:center;}
+.custom-coin-options{position:absolute;top:calc(100% + 10px);left:0;right:0;z-index:20;display:none;grid-template-columns:1fr;gap:8px;padding:10px 0;background:rgba(10,11,20,0.98);border:1px solid rgba(255,255,255,0.12);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,0.35);max-height:280px;overflow:auto;}
+.custom-coin-option{display:flex;align-items:center;gap:12px;padding:12px 16px;color:#fff;cursor:pointer;transition:background 0.2s;}
+.custom-coin-option:hover{background:rgba(255,255,255,0.06);}
+.custom-coin-option.selected{background:rgba(0,229,255,0.15);}
+.option-icon-shell{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.08);}
+.option-icon-shell img{width:24px;height:24px;object-fit:contain;}
+.option-label{font-size:0.95rem;color:#fff;}
+.option-symbol{color:var(--muted);font-size:0.85rem;}
+.available-text{color:var(--cyan);font-size:0.92rem;font-weight:600;}
+.note{font-size:0.82rem;color:var(--muted);line-height:1.6;}
+.btn-primary{margin-top:5px;padding:16px 24px;border:none;border-radius:16px;background:linear-gradient(90deg,#00e5ff,#a855f7);color:#000;font-weight:700;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 18px 35px rgba(0,229,255,0.18);}
+.status-message{margin-top:18px;font-size:0.95rem;min-height:24px;}
+.status-message.success{color:#22c55e;}
+.status-message.error{color:#f87171;}
+@media(max-width:720px){nav{padding:14px 20px;}.page-wrap{padding:0 16px;}.select-with-icon{flex-wrap:wrap;}.select-with-icon select{width:100%;}}
+
+/* ===== UNIVERSAL TOAST ===== */
+#gToast{position:fixed;top:16px;right:16px;display:flex;align-items:center;gap:10px;padding:13px 18px 13px 14px;border-radius:12px;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:600;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:99999;opacity:0;transform:translateY(-14px) scale(.96);transition:opacity .28s ease,transform .28s ease;pointer-events:none;min-width:220px;max-width:calc(100vw - 32px);}
+#gToast.g-success{background:rgba(5,46,22,.85);border:1px solid rgba(34,197,94,.45);color:#4ade80;}
+#gToast.g-error{background:rgba(69,10,10,.85);border:1px solid rgba(239,68,68,.45);color:#f87171;}
+#gToast.g-info{background:rgba(8,28,60,.85);border:1px solid rgba(99,179,237,.45);color:#93c5fd;}
+#gToast.g-show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+#gToast .g-icon{flex-shrink:0;width:18px;height:18px;}
+#gToast .g-msg{flex:1;line-height:1.4;}
+
+/* ====== SHARED NAV MOBILE ====== */
+@media(max-width:768px){
+  nav{padding:12px 16px!important;height:auto!important;flex-wrap:wrap;gap:8px;}
+  .nav-links{display:none!important;}
+  .logo{font-size:1rem!important;}
+  .logo-box{width:30px!important;height:30px!important;font-size:0.85rem!important;}
+  .nav-status span{padding:8px 12px!important;font-size:0.8rem!important;}
+  .logout-btn{padding:8px 12px!important;font-size:0.82rem!important;}
+  .page-wrap{margin-top:16px!important;padding:0 12px 48px!important;}
+  .tab-row{padding:10px!important;gap:6px!important;border-radius:12px!important;}
+  .tab{padding:8px 12px!important;font-size:0.82rem!important;}
+}
+/* ====== END SHARED NAV ====== */
+
+/* ====== MOBILE – transfer.html ====== */
+@media(max-width:768px){
+  .transfer-grid{grid-template-columns:1fr!important;gap:16px!important;}
+  .panel{padding:18px 14px!important;}
+  .select-with-icon{flex-direction:column!important;gap:8px!important;}
+  .select-with-icon select{width:100%!important;font-size:0.88rem!important;padding:11px 12px!important;}
+  .select-icon{display:none!important;}
+  .amount-row{flex-direction:column!important;gap:8px!important;}
+  .amount-input{font-size:0.9rem!important;padding:12px 14px!important;}
+  .transfer-btn{width:100%!important;padding:13px!important;}
+  .panel h2{font-size:1rem!important;}
+}
+/* ====== END MOBILE transfer.html ====== */
+
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><div class="logo-box">B</div>Nexus Live</a>
+  <div class="nav-links">
+    <a href="#">P2P</a>
+    <a href="index.html#swapSection">Swap</a>
+    <a href="#">Support</a>
+  </div>
+  <div class="nav-status">
+    <span id="navWallet">Wallet: $0.00</span>
+    <span id="profileNavName">Loading...</span>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </div>
+</nav>
+<div class="page-wrap">
+  <div class="tab-row">
+    <a href="profile.html" class="tab">Overview</a>
+    <a href="deposit.html" class="tab">Deposit</a>
+    <a href="withdraw.html" class="tab">Withdraw</a>
+    <a href="transactions.html" class="tab">Transactions</a>
+    <a href="transfer.html" class="tab active">Transfer</a>
+    <a href="settings.html" class="tab">Settings</a>
+  </div>
+  <div class="panel">
+    <h1>Transfer funds</h1>
+    <p>Internal transfers between users. Send assets instantly to another account ID or wallet address.</p>
+    <form id="transferForm" class="form-row">
+      <div class="form-group">
+        <label for="coinSelectWrapper">Select coin</label>
+        <div class="custom-coin-select" id="coinSelectWrapper" tabindex="0">
+          <div class="custom-coin-trigger" id="coinTrigger">
+            <span class="coin-icon-shell"><img id="coinLogo" src="" alt="coin logo" /><span id="coinFallback" class="coin-fallback" style="display:none;">B</span></span>
+            <span id="coinSelectedLabel">Bitcoin (BTC)</span>
+            <span class="dropdown-arrow">▾</span>
+          </div>
+          <div class="custom-coin-options" id="coinOptions"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="amountInput">You transfer</label>
+        <input id="amountInput" type="number" step="any" min="0" placeholder="Enter amount" />
+        <span class="available-text">Available: <span id="availableBalance">0 BTC</span></span>
+      </div>
+      <div class="form-group">
+        <label for="receiverInput">Receiver's wallet address / ID</label>
+        <input id="receiverInput" type="text" placeholder="Please enter user wallet address or account ID" />
+        <span class="note">Note: user can find user ID on the Wallet overview page.</span>
+      </div>
+      <button type="submit" class="btn-primary">Transfer funds</button>
+      <div id="statusMessage" class="status-message"></div>
+    </form>
+  </div>
+</div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCC39kwMyETNvaHY-KezEKkOZV427s60vs",
+  authDomain: "adminpanel-55a5c.firebaseapp.com",
+  projectId: "adminpanel-55a5c",
+  storageBucket: "adminpanel-55a5c.firebasestorage.app",
+  messagingSenderId: "356063021629",
+  appId: "1:356063021629:web:d980b168b69b1de701b854"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const coins = [
+  { symbol: 'BTC', name: 'Bitcoin', logo: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', color: '#f7931a' },
+  { symbol: 'ETH', name: 'Ethereum', logo: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', color: '#627eea' },
+  { symbol: 'USDT', name: 'Tether', logo: 'https://assets.coingecko.com/coins/images/325/small/Tether-logo.png', color: '#26a17b' },
+  { symbol: 'BNB', name: 'Binance Coin', logo: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png?1644979850', color: '#f3ba2f' },
+  { symbol: 'XRP', name: 'XRP', logo: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png', color: '#25a8e0' },
+  { symbol: 'LTC', name: 'Litecoin', logo: 'https://assets.coingecko.com/coins/images/2/small/litecoin.png', color: '#bebebe' },
+  { symbol: 'ADA', name: 'Cardano', logo: 'https://assets.coingecko.com/coins/images/975/small/cardano.png', color: '#0033ad' },
+  { symbol: 'DOGE', name: 'Dogecoin', logo: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png', color: '#c2a633' },
+  { symbol: 'SOL', name: 'Solana', logo: 'https://assets.coingecko.com/coins/images/4128/small/solana.png', color: '#00ffa3' },
+  { symbol: 'DOT', name: 'Polkadot', logo: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png', color: '#e6007a' },
+  { symbol: 'MATIC', name: 'Polygon', logo: 'https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png', color: '#8247e5' },
+  { symbol: 'AVAX', name: 'Avalanche', logo: 'https://assets.coingecko.com/coins/images/12559/small/AVA.png', color: '#e84142' },
+  { symbol: 'LINK', name: 'Chainlink', logo: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png', color: '#2a5ada' },
+  { symbol: 'TRX', name: 'TRON', logo: 'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png', color: '#de0029' },
+  { symbol: 'SHIB', name: 'Shiba Inu', logo: 'https://assets.coingecko.com/coins/images/11939/small/shiba.png', color: '#f58220' },
+  { symbol: 'UNI', name: 'Uniswap', logo: 'https://assets.coingecko.com/coins/images/12504/small/uniswap-uni.png', color: '#ff007a' },
+  { symbol: 'DAI', name: 'Dai', logo: 'https://assets.coingecko.com/coins/images/9956/small/4943.png', color: '#f5b918' },
+  { symbol: 'BUSD', name: 'Binance USD', logo: 'https://assets.coingecko.com/coins/images/9576/small/BUSD.png', color: '#f0b90b' },
+  { symbol: 'WBTC', name: 'Wrapped Bitcoin', logo: 'https://assets.coingecko.com/coins/images/7598/small/wrapped_bitcoin_wbtc.png', color: '#f7931a' },
+  { symbol: 'ATOM', name: 'Cosmos', logo: 'https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png', color: '#2e3148' }
+];
+
+const coinLogo = document.getElementById('coinLogo');
+const coinFallback = document.getElementById('coinFallback');
+const coinTrigger = document.getElementById('coinTrigger');
+const coinOptions = document.getElementById('coinOptions');
+const coinSelectedLabel = document.getElementById('coinSelectedLabel');
+const availableBalance = document.getElementById('availableBalance');
+const amountInput = document.getElementById('amountInput');
+const receiverInput = document.getElementById('receiverInput');
+const statusMessage = document.getElementById('statusMessage');
+const profileNavName = document.getElementById('profileNavName');
+const navWallet = document.getElementById('navWallet');
+const transferForm = document.getElementById('transferForm');
+let isOptionsOpen = false;
+let selectedCoinSymbol = 'BTC';
+
+coinLogo.onerror = () => {
+  coinLogo.style.display = 'none';
+  coinFallback.style.display = 'flex';
+};
+
+coinLogo.onload = () => {
+  coinLogo.style.display = 'block';
+  coinFallback.style.display = 'none';
+};
+
+let currentUser = null;
+let currentUserData = { balances: {} };
+
+function createFallbackBalances(balanceValue) {
+  const result = coins.reduce((acc, coin) => {
+    acc[coin.symbol] = 0;
+    return acc;
+  }, {});
+  if (typeof balanceValue === 'number') {
+    result.BTC = balanceValue;
+  } else if (!isNaN(parseFloat(balanceValue))) {
+    result.BTC = parseFloat(balanceValue);
+  }
+  return result;
+}
+
+function formatNumber(value) {
+  const number = Number(value);
+  if (Number.isNaN(number)) return '0';
+  return number.toLocaleString(undefined, { maximumFractionDigits: 8 }).replace(/\.?0+$/, '');
+}
+
+function getSelectedCoin() {
+  return coins.find(coin => coin.symbol === selectedCoinSymbol) || coins[0];
+}
+
+function updateCoinSelect() {
+  coinOptions.innerHTML = '';
+  coins.forEach(coin => {
+    const item = document.createElement('div');
+    item.className = 'custom-coin-option';
+    item.dataset.symbol = coin.symbol;
+    item.innerHTML = `
+      <div class="option-icon-shell">
+        <img src="${coin.logo}" alt="${coin.name}" />
+      </div>
+      <div class="option-label">${coin.name} <span class="option-symbol">(${coin.symbol})</span></div>
+    `;
+    item.addEventListener('click', () => {
+      selectedCoinSymbol = coin.symbol;
+      updateCoinDisplay();
+      toggleOptions(false);
+    });
+    coinOptions.appendChild(item);
+  });
+  selectedCoinSymbol = 'BTC';
+  updateCoinDisplay();
+}
+
+function updateCoinDisplay() {
+  const coin = getSelectedCoin();
+  coinLogo.src = coin.logo;
+  coinLogo.alt = coin.name;
+  coinLogo.style.display = 'block';
+  coinFallback.style.display = 'none';
+  coinFallback.textContent = coin.symbol.charAt(0);
+  coinSelectedLabel.textContent = `${coin.name} (${coin.symbol})`;
+  const balance = currentUserData.balances?.[coin.symbol] ?? 0;
+  availableBalance.textContent = `${formatNumber(balance)} ${coin.symbol}`;
+  document.querySelectorAll('.custom-coin-option').forEach(option => {
+    option.classList.toggle('selected', option.dataset.symbol === coin.symbol);
+  });
+}
+
+function getSelectedCoin() {
+  return coins.find(coin => coin.symbol === selectedCoinSymbol) || coins[0];
+}
+
+function toggleOptions(show) {
+  isOptionsOpen = show;
+  coinOptions.style.display = show ? 'grid' : 'none';
+  coinTrigger.classList.toggle('open', show);
+}
+
+function showStatus(message, success = false) {
+  if(!message) return;
+  showToast(message, success ? 'success' : 'error');
+}
+
+function loadUserDocument(user) {
+  const userRef = db.collection('users').doc(user.uid);
+  userRef.get().then(doc => {
+    const data = doc.exists ? doc.data() : {};
+    currentUserData = {
+      ...data,
+      balances: data.balances || createFallbackBalances(data.balance || 0)
+    };
+    updateCoinDisplay();
+    const walletValue = typeof data.balance === 'number' ? data.balance : (data.balance ? parseFloat(data.balance) : 0);
+    navWallet.textContent = `Wallet: $${formatNumber(walletValue)}`;
+  }).catch(error => {
+    console.error('Failed to load user data:', error);
+    showStatus('Unable to load wallet data. Please refresh.', false);
+  });
+}
+
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    window.location.href = 'signin.html';
+    return;
+  }
+  currentUser = user;
+  profileNavName.textContent = user.displayName || user.email.split('@')[0];
+  loadUserDocument(user);
+});
+
+coinTrigger.addEventListener('click', () => {
+  toggleOptions(!isOptionsOpen);
+});
+
+document.addEventListener('click', (event) => {
+  if (!document.getElementById('coinSelectWrapper').contains(event.target)) {
+    toggleOptions(false);
+  }
+});
+
+transferForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  showStatus('');
+
+  if (!currentUser) {
+    showStatus('User not signed in.', false);
+    return;
+  }
+
+  const coin = getSelectedCoin();
+  const amount = Number(amountInput.value);
+  const receiverId = receiverInput.value.trim();
+
+  if (!amount || amount <= 0) {
+    showStatus('Enter a valid transfer amount.', false);
+    return;
+  }
+
+  if (!receiverId) {
+    showStatus('Enter the receiver wallet address or ID.', false);
+    return;
+  }
+
+  if (receiverId === currentUser.uid) {
+    showStatus('You cannot transfer to your own account.', false);
+    return;
+  }
+
+  const available = Number(currentUserData.balances?.[coin.symbol] ?? 0);
+  if (amount > available) {
+    showStatus(`Insufficient ${coin.symbol} balance.`, false);
+    return;
+  }
+
+  transferForm.querySelector('button[type="submit"]').disabled = true;
+  transferForm.querySelector('button[type="submit"]').textContent = 'Sending...';
+
+  try {
+    await db.runTransaction(async (tx) => {
+      const senderRef = db.collection('users').doc(currentUser.uid);
+      const receiverRef = db.collection('users').doc(receiverId);
+      const senderDoc = await tx.get(senderRef);
+      const receiverDoc = await tx.get(receiverRef);
+
+      if (!receiverDoc.exists) {
+        throw new Error('Receiver not found. Check the wallet ID.');
+      }
+
+      const senderData = senderDoc.data() || {};
+      const receiverData = receiverDoc.data() || {};
+      const senderBalances = senderData.balances || createFallbackBalances(senderData.balance || 0);
+      const receiverBalances = receiverData.balances || createFallbackBalances(receiverData.balance || 0);
+      const senderBalance = Number(senderBalances[coin.symbol] || 0);
+
+      if (amount > senderBalance) {
+        throw new Error(`Not enough ${coin.symbol} available to transfer.`);
+      }
+
+      senderBalances[coin.symbol] = Number((senderBalance - amount).toFixed(8));
+      receiverBalances[coin.symbol] = Number(((Number(receiverBalances[coin.symbol] || 0) + amount)).toFixed(8));
+
+      const senderUpdate = { balances: senderBalances };
+      const receiverUpdate = { balances: receiverBalances };
+      if (coin.symbol === 'BTC') {
+        senderUpdate.balance = senderBalances.BTC;
+        receiverUpdate.balance = receiverBalances.BTC;
+      }
+
+      tx.update(senderRef, senderUpdate);
+      tx.update(receiverRef, receiverUpdate);
+
+      const transactionTime = firebase.firestore.FieldValue.serverTimestamp();
+      const senderTx = {
+        type: 'withdraw',
+        coinSymbol: coin.symbol,
+        amount,
+        address: receiverId,
+        status: 'Completed',
+        hash: `transfer-${Date.now()}`,
+        time: transactionTime,
+        coinLogo: coin.logo,
+        coinColor: coin.color
+      };
+      const receiverTx = {
+        type: 'deposit',
+        coinSymbol: coin.symbol,
+        amount,
+        address: currentUser.uid,
+        status: 'Completed',
+        hash: `transfer-${Date.now()}`,
+        time: transactionTime,
+        coinLogo: coin.logo,
+        coinColor: coin.color
+      };
+
+      tx.set(senderRef.collection('transactions').doc(), senderTx);
+      tx.set(receiverRef.collection('transactions').doc(), receiverTx);
+    });
+
+    showStatus(`Transferred ${formatNumber(amount)} ${coin.symbol} successfully.`, true);
+    amountInput.value = '';
+    receiverInput.value = '';
+    loadUserDocument(currentUser);
+  } catch (error) {
+    console.error('Transfer failed:', error);
+    showStatus(error.message || 'Transfer failed. Please try again.', false);
+  } finally {
+    transferForm.querySelector('button[type="submit"]').disabled = false;
+    transferForm.querySelector('button[type="submit"]').textContent = 'Transfer funds';
+  }
+});
+
+updateCoinSelect();
+</script>
+
+<div id="gToast">
+  <svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span class="g-msg"></span>
+</div>
+<script>
+(function(){var _t=null;window.showToast=function(msg,kind,dur){kind=kind||'success';dur=dur||3500;var t=document.getElementById('gToast');if(!t)return;var ico=t.querySelector('.g-icon'),sp=t.querySelector('.g-msg');sp.textContent=msg;if(kind==='error'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';}else if(kind==='info'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>';}else{ico.innerHTML='<polyline points="20 6 9 17 4 12"/>';}t.className='g-'+kind+' g-show';clearTimeout(_t);_t=setTimeout(function(){t.classList.remove('g-show');},dur);};})();</script>
+</body>
+</html>

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus | Withdraw</title>
+<link rel="icon" type="Image/png" href="logo/nexus_logo-only.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080810;--bg2:#0d0d1a;--bg3:#11121f;
+  --text:#e2e8f0;--muted:#8b95ac;--cyan:#00e5ff;--purple:#a855f7;--pink:#ec4899;
+  --green:#22c55e;--red:#ef4444;--border:rgba(255,255,255,0.08);
+}
+body{font-family:'Inter',sans-serif;background:linear-gradient(180deg,#05050b 0%,#0a0b18 100%);color:var(--text);min-height:100vh;}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;position:sticky;top:0;background:rgba(8,8,16,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;font-weight:800;text-decoration:none;font-size:1.1rem;}
+.logo-box{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:800;color:#000;font-size:1rem;}
+.nav-links{display:flex;gap:24px;align-items:center;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:0.92rem;transition:color 0.2s;}
+.nav-links a:hover{color:#fff;}
+.nav-status{display:flex;gap:12px;align-items:center;font-size:0.9rem;color:var(--muted);}
+.nav-status span{padding:10px 16px;border:1px solid rgba(255,255,255,0.08);border-radius:999px;}
+.logout-btn{padding:10px 16px;border:none;border-radius:999px;background:rgba(255,255,255,0.1);color:#fff;font-weight:600;cursor:pointer;transition:background 0.2s;font-family:'Inter',sans-serif;}
+.logout-btn:hover{background:rgba(255,255,255,0.18);}
+
+/* PAGE */
+.page-wrap{max-width:1240px;margin:32px auto;padding:0 24px 60px;}
+
+/* TABS */
+.tab-row{display:flex;flex-wrap:wrap;gap:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;justify-content:center;margin-bottom:32px;}
+.tab{padding:10px 18px;border-radius:12px;color:var(--muted);text-decoration:none;font-size:0.92rem;transition:all 0.2s;}
+.tab.active,.tab:hover{background:rgba(255,255,255,0.06);color:#fff;}
+
+/* MAIN LAYOUT */
+.withdraw-layout{display:grid;grid-template-columns:400px 1fr;gap:24px;align-items:start;}
+
+/* COIN LIST */
+.coin-list-panel{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.coin-list-header{padding:20px 24px;border-bottom:1px solid var(--border);}
+.coin-list-header h3{font-size:1rem;font-weight:700;color:#fff;}
+.coin-list-header p{font-size:0.82rem;color:var(--muted);margin-top:4px;}
+.coin-list{max-height:640px;overflow-y:auto;}
+.coin-list::-webkit-scrollbar{width:4px;}
+.coin-list::-webkit-scrollbar-track{background:transparent;}
+.coin-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px;}
+.coin-item{display:flex;align-items:center;gap:14px;padding:16px 24px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.2s;border-left:3px solid transparent;}
+.coin-item:last-child{border-bottom:none;}
+.coin-item:hover{background:rgba(255,255,255,0.04);}
+.coin-item.active{background:linear-gradient(90deg,rgba(99,75,220,0.35),rgba(99,75,220,0.08));border-left-color:var(--purple);}
+.coin-item.active .coin-item-name{color:#fff;}
+.coin-logo{width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.coin-logo-fallback{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;flex-shrink:0;}
+.coin-item-info{flex:1;min-width:0;}
+.coin-item-name{font-size:0.93rem;font-weight:600;color:var(--text);}
+.coin-item-network{font-size:0.76rem;color:var(--muted);margin-top:2px;}
+.coin-item-bal{font-size:0.85rem;font-weight:600;color:var(--muted);white-space:nowrap;}
+
+/* RIGHT PANEL */
+.right-col{display:flex;flex-direction:column;gap:20px;}
+
+/* WITHDRAW FORM PANEL */
+.withdraw-panel{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.withdraw-panel-header{padding:22px 28px;border-bottom:1px solid var(--border);}
+.withdraw-panel-header h2{font-size:1.1rem;font-weight:700;color:#fff;}
+.withdraw-body{padding:28px;display:flex;flex-direction:column;gap:24px;}
+
+/* FORM ROWS */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center;}
+.field-label{display:flex;flex-direction:column;gap:4px;}
+.field-label strong{font-size:0.93rem;font-weight:700;color:#fff;}
+.field-label span{font-size:0.78rem;color:var(--muted);}
+.field-label span .max-amount{color:#22c55e;font-weight:700;cursor:pointer;transition:text-decoration 0.2s;}
+.field-label span .max-amount:hover{text-decoration:underline;}
+.field-input input{
+  width:100%;padding:14px 18px;
+  background:rgba(0,0,0,0.3);
+  border:1px solid var(--border);
+  border-radius:12px;
+  color:#fff;font-size:0.9rem;
+  font-family:'Inter',sans-serif;
+  outline:none;transition:border-color 0.2s;
+}
+.field-input input::placeholder{color:var(--muted);}
+.field-input input:focus{border-color:rgba(168,85,247,0.5);}
+
+/* FEE ROW */
+.fee-row{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:20px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.fee-label strong{font-size:0.93rem;font-weight:700;color:#fff;}
+.fee-label span{font-size:0.78rem;color:var(--muted);display:block;margin-top:3px;}
+.fee-amount{font-size:1.2rem;font-weight:800;color:#fff;text-align:right;}
+
+/* WITHDRAW BTN */
+.withdraw-btn{align-self:flex-end;display:inline-flex;align-items:center;gap:10px;padding:14px 32px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--purple),#4f46e5);color:#fff;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.withdraw-btn:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(168,85,247,0.35);}
+.withdraw-btn svg{width:18px;height:18px;}
+
+/* IMPORTANT INFO PANEL */
+.info-panel{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.info-panel-header{padding:20px 28px;border-bottom:1px solid var(--border);}
+.info-panel-header h3{font-size:1rem;font-weight:700;color:#fff;}
+.info-panel-body{padding:24px 28px;display:flex;flex-direction:column;gap:14px;}
+.info-item{display:flex;align-items:flex-start;gap:10px;font-size:0.86rem;color:var(--muted);line-height:1.65;}
+.info-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0;margin-top:8px;}
+
+/* SUCCESS TOAST */
+.toast{position:fixed;bottom:32px;right:32px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.35);border-radius:14px;padding:16px 22px;color:#34d399;font-size:0.9rem;font-weight:600;z-index:999;display:none;align-items:center;gap:10px;backdrop-filter:blur(10px);}
+.toast.show{display:flex;}
+
+/* ERROR BOX */
+.error-box{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:12px;padding:12px 16px;color:#f87171;font-size:0.85rem;display:none;}
+.error-box.show{display:block;}
+
+@media(max-width:920px){
+  .withdraw-layout{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+  nav{padding:14px 20px;}
+  .nav-links{display:none;}
+}
+
+/* ===== UNIVERSAL TOAST ===== */
+#gToast{position:fixed;top:16px;right:16px;display:flex;align-items:center;gap:10px;padding:13px 18px 13px 14px;border-radius:12px;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:600;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.35);z-index:99999;opacity:0;transform:translateY(-14px) scale(.96);transition:opacity .28s ease,transform .28s ease;pointer-events:none;min-width:220px;max-width:calc(100vw - 32px);}
+#gToast.g-success{background:rgba(5,46,22,.85);border:1px solid rgba(34,197,94,.45);color:#4ade80;}
+#gToast.g-error{background:rgba(69,10,10,.85);border:1px solid rgba(239,68,68,.45);color:#f87171;}
+#gToast.g-info{background:rgba(8,28,60,.85);border:1px solid rgba(99,179,237,.45);color:#93c5fd;}
+#gToast.g-show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+#gToast .g-icon{flex-shrink:0;width:18px;height:18px;}
+#gToast .g-msg{flex:1;line-height:1.4;}
+
+/* ====== SHARED NAV MOBILE ====== */
+@media(max-width:768px){
+  nav{padding:12px 16px!important;height:auto!important;flex-wrap:wrap;gap:8px;}
+  .nav-links{display:none!important;}
+  .logo{font-size:1rem!important;}
+  .logo-box{width:30px!important;height:30px!important;font-size:0.85rem!important;}
+  .nav-status span{padding:8px 12px!important;font-size:0.8rem!important;}
+  .logout-btn{padding:8px 12px!important;font-size:0.82rem!important;}
+  .page-wrap{margin-top:16px!important;padding:0 12px 48px!important;}
+  .tab-row{padding:10px!important;gap:6px!important;border-radius:12px!important;}
+  .tab{padding:8px 12px!important;font-size:0.82rem!important;}
+}
+/* ====== END SHARED NAV ====== */
+
+/* ====== MOBILE – withdraw.html ====== */
+@media(max-width:768px){
+  .withdraw-layout{grid-template-columns:1fr!important;gap:16px!important;}
+  .coin-sidebar{max-height:260px!important;}
+  .coin-list{max-height:200px!important;}
+  .coin-item{padding:12px 16px!important;}
+  .coin-logo,.coin-logo-fallback{width:32px!important;height:32px!important;}
+
+  .withdraw-body{padding:18px 14px!important;gap:16px!important;}
+  .form-row{grid-template-columns:1fr!important;gap:12px!important;}
+  .field-input input{padding:12px 14px!important;font-size:0.88rem!important;}
+  .field-label strong{font-size:0.88rem!important;}
+
+  .fee-row{grid-template-columns:1fr!important;gap:8px!important;padding:14px 0!important;}
+  .fee-amount{text-align:left!important;font-size:1rem!important;}
+
+  .withdraw-btn{width:100%!important;justify-content:center!important;padding:13px 20px!important;}
+  .info-panel-body{padding:16px 14px!important;}
+  .info-item{font-size:0.82rem!important;}
+}
+/* ====== END MOBILE withdraw.html ====== */
+
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo"><div class="logo-box">B</div>Nexus Live</a>
+  <div class="nav-links">
+    <a href="#">P2P</a>
+    <a href="index.html#swapSection">Swap</a>
+    <a href="#">Support</a>
+  </div>
+  <div class="nav-status">
+    <span>Wallet: <strong id="walletAmount">0 USD</strong></span>
+    <span id="profileNavName">Loading...</span>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <!-- TABS -->
+  <div class="tab-row">
+    <a href="profile.html" class="tab">Overview</a>
+    <a href="deposit.html" class="tab">Deposit</a>
+    <a href="withdraw.html" class="tab active">Withdraw</a>
+    <a href="transactions.html" class="tab">Transactions</a>
+    <a href="transfer.html" class="tab">Transfer</a>
+    <a href="settings.html" class="tab">Settings</a>
+  </div>
+
+  <div class="withdraw-layout">
+    <!-- LEFT: COIN LIST -->
+    <div class="coin-list-panel">
+      <div class="coin-list-header">
+        <h3>Select Coin</h3>
+        <p>Choose a cryptocurrency to withdraw</p>
+      </div>
+      <div class="coin-list" id="coinList"></div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right-col">
+      <!-- WITHDRAW FORM -->
+      <div class="withdraw-panel">
+        <div class="withdraw-panel-header">
+          <h2 id="panelTitle">Withdraw</h2>
+        </div>
+        <div class="withdraw-body" id="withdrawBody">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- IMPORTANT INFO -->
+      <div class="info-panel">
+        <div class="info-panel-header">
+          <h3>Important Information</h3>
+        </div>
+        <div class="info-panel-body">
+          <div class="info-item"><span class="info-dot"></span><span>We strongly recommend that you copy &amp; paste the address to help avoid errors. Please note that we are not responsible for coins mistakenly sent to the wrong address.</span></div>
+          <div class="info-item"><span class="info-dot"></span><span>Transactions normally take about 30 to 60 minutes to send, on occasion it can take a few hours if the crypto network is slow.</span></div>
+          <div class="info-item"><span class="info-dot"></span><span>Make sure the destination address supports the correct network. Sending to the wrong network will result in permanent loss of funds.</span></div>
+          <div class="info-item"><span class="info-dot"></span><span>Minimum withdrawal amounts apply. Withdrawals below the minimum will not be processed.</span></div>
+          <div class="info-item"><span class="info-dot"></span><span>Withdrawals are irreversible. Once submitted, we cannot cancel or reverse the transaction.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS TOAST -->
+<div class="toast" id="toast">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  Withdrawal request submitted successfully!
+</div>
+
+<script>
+// ─── COIN DATA ────────────────────────────────────────────────────────────────
+const coins = [
+  { id:'btc',       name:'Bitcoin',         network:'Bitcoin Network',   symbol:'BTC',  color:'#f7931a', logo:'https://cryptologos.cc/logos/bitcoin-btc-logo.png',          fee:'0.000045',  minWithdraw:'0.001'   },
+  { id:'eth',       name:'Ethereum',        network:'Ethereum Network',  symbol:'ETH',  color:'#627eea', logo:'https://cryptologos.cc/logos/ethereum-eth-logo.png',          fee:'0.003',     minWithdraw:'0.01'    },
+  { id:'ltc',       name:'Litecoin',        network:'Litecoin Network',  symbol:'LTC',  color:'#bfbbbb', logo:'https://cryptologos.cc/logos/litecoin-ltc-logo.png',          fee:'0.001',     minWithdraw:'0.1'     },
+  { id:'usdt-erc',  name:'USDT ERC-20',     network:'Ethereum Network',  symbol:'USDT', color:'#26a17b', logo:'https://cryptologos.cc/logos/tether-usdt-logo.png',           fee:'10',        minWithdraw:'20'      },
+  { id:'usdt-bep',  name:'USDT BEP-20',     network:'BSC Network',       symbol:'USDT', color:'#26a17b', logo:'https://cryptologos.cc/logos/tether-usdt-logo.png',           fee:'0.5',       minWithdraw:'10'      },
+  { id:'usdt-trc',  name:'USDT TRC-20',     network:'Tron Network',      symbol:'USDT', color:'#26a17b', logo:'https://cryptologos.cc/logos/tether-usdt-logo.png',           fee:'1',         minWithdraw:'5'       },
+  { id:'trx',       name:'Tron',            network:'Tron Network',      symbol:'TRX',  color:'#ef0027', logo:'https://cryptologos.cc/logos/tron-trx-logo.png',              fee:'1',         minWithdraw:'50'      },
+  { id:'bnb',       name:'BNB BEP-20',      network:'BSC Network',       symbol:'BNB',  color:'#f3ba2f', logo:'https://cryptologos.cc/logos/bnb-bnb-logo.png',               fee:'0.001',     minWithdraw:'0.01'    },
+  { id:'usdc',      name:'USD Coin ERC-20', network:'Ethereum Network',  symbol:'USDC', color:'#2775ca', logo:'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',         fee:'10',        minWithdraw:'20'      },
+  { id:'sol',       name:'Solana',          network:'Solana Network',    symbol:'SOL',  color:'#9945ff', logo:'https://cryptologos.cc/logos/solana-sol-logo.png',            fee:'0.01',      minWithdraw:'0.1'     },
+  { id:'xrp',       name:'Ripple XRP',      network:'XRP Ledger',        symbol:'XRP',  color:'#346aa9', logo:'https://cryptologos.cc/logos/xrp-xrp-logo.png',               fee:'0.25',      minWithdraw:'20'      },
+  { id:'doge',      name:'Dogecoin',        network:'Dogecoin Network',  symbol:'DOGE', color:'#c2a633', logo:'https://cryptologos.cc/logos/dogecoin-doge-logo.png',         fee:'5',         minWithdraw:'50'      },
+  { id:'ada',       name:'Cardano',         network:'Cardano Network',   symbol:'ADA',  color:'#0033ad', logo:'https://cryptologos.cc/logos/cardano-ada-logo.png',           fee:'1',         minWithdraw:'5'       },
+  { id:'matic',     name:'Polygon MATIC',   network:'Polygon Network',   symbol:'MATIC',color:'#8247e5', logo:'https://cryptologos.cc/logos/polygon-matic-logo.png',         fee:'0.1',       minWithdraw:'10'      },
+  { id:'dot',       name:'Polkadot',        network:'Polkadot Network',  symbol:'DOT',  color:'#e6007a', logo:'https://cryptologos.cc/logos/polkadot-new-dot-logo.png',      fee:'0.1',       minWithdraw:'1'       },
+  { id:'link',      name:'Chainlink',       network:'Ethereum Network',  symbol:'LINK', color:'#2a5ada', logo:'https://cryptologos.cc/logos/chainlink-link-logo.png',        fee:'0.5',       minWithdraw:'1'       },
+  { id:'avax',      name:'Avalanche',       network:'Avalanche Network', symbol:'AVAX', color:'#e84142', logo:'https://cryptologos.cc/logos/avalanche-avax-logo.png',        fee:'0.01',      minWithdraw:'0.1'     },
+  { id:'shib',      name:'Shiba Inu',       network:'Ethereum Network',  symbol:'SHIB', color:'#ff5700', logo:'https://cryptologos.cc/logos/shiba-inu-shib-logo.png',        fee:'500000',    minWithdraw:'1000000' },
+];
+
+let selectedCoin = null;
+
+function formatCryptoAmount(amount) {
+  const value = Number(amount) || 0;
+  return value === 0 ? '0' : value.toFixed(8).replace(/\.?0+$/, '');
+}
+
+function updateCoinListBalances() {
+  document.querySelectorAll('.coin-item').forEach(item => {
+    const symbol = item.dataset.symbol;
+    if (!symbol) return;
+    const key = getBalanceKey(symbol);
+    const balance = Number(currentUserData.balances?.[key] || 0);
+    const balEl = item.querySelector('.coin-item-bal');
+    if (balEl) balEl.textContent = `${formatCryptoAmount(balance)} ${symbol}`;
+  });
+}
+
+// ─── BUILD COIN LIST ──────────────────────────────────────────────────────────
+function buildCoinList() {
+  const list = document.getElementById('coinList');
+  coins.forEach((coin, i) => {
+    const item = document.createElement('div');
+    item.className = 'coin-item' + (i === 0 ? ' active' : '');
+    item.dataset.symbol = coin.symbol;
+    item.innerHTML = `
+      <img class="coin-logo" src="${coin.logo}" alt="${coin.symbol}"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="coin-logo-fallback" style="display:none;background:${coin.color}22;color:${coin.color}">
+        ${coin.symbol.charAt(0)}
+      </div>
+      <div class="coin-item-info">
+        <div class="coin-item-name">${coin.name}</div>
+        <div class="coin-item-network">${coin.network}</div>
+      </div>
+      <div class="coin-item-bal">0 ${coin.symbol}</div>
+    `;
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.coin-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+      renderWithdrawPanel(coin);
+    });
+    list.appendChild(item);
+  });
+  renderWithdrawPanel(coins[0]);
+}
+
+// ─── RENDER WITHDRAW FORM ─────────────────────────────────────────────────────
+function renderWithdrawPanel(coin) {
+  selectedCoin = coin;
+  document.getElementById('panelTitle').textContent = 'Withdraw';
+
+  const body = document.getElementById('withdrawBody');
+  body.innerHTML = `
+    <!-- ADDRESS ROW -->
+    <div class="form-row">
+      <div class="field-label">
+        <strong>Destination ${coin.name} address</strong>
+        <span>Please double check this address</span>
+      </div>
+      <div class="field-input">
+        <input type="text" id="destAddress" placeholder="Please enter recipient's ${coin.name} address" />
+      </div>
+    </div>
+
+    <!-- AMOUNT ROW -->
+    <div class="form-row">
+      <div class="field-label">
+        <strong>Amount ${coin.name}</strong>
+        <span>Maximum amount withdrawable: <span id="maxWithdrawAmount" class="max-amount">0 ${coin.symbol}</span></span>
+      </div>
+      <div class="field-input">
+        <input type="number" id="withdrawAmount" placeholder="Enter how much you need" min="0" step="any" />
+      </div>
+    </div>
+
+    <!-- FEE ROW -->
+    <div class="fee-row">
+      <div class="fee-label">
+        <strong>${coin.name} Network Fee</strong>
+        <span>Transactions on the ${coin.name} network are prioritized by fees</span>
+      </div>
+      <div class="fee-amount">${coin.fee} ${coin.symbol}</div>
+    </div>
+
+    <!-- ERROR -->
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- BUTTON -->
+    <div style="display:flex;justify-content:flex-end;">
+      <button class="withdraw-btn" id="withdrawBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        Withdraw now
+      </button>
+    </div>
+  `;
+
+  document.getElementById('withdrawBtn').addEventListener('click', handleWithdraw);
+  const available = getAvailableBalance(coin.symbol);
+  const amountInput = document.getElementById('withdrawAmount');
+  if (amountInput) {
+    amountInput.value = '';
+    amountInput.placeholder = available > 0 ? `Enter how much you need (max ${formatCryptoAmount(available)} ${coin.symbol})` : `No ${coin.symbol} balance available`;
+  }
+  const maxLabel = document.getElementById('maxWithdrawAmount');
+  if (maxLabel) {
+    maxLabel.addEventListener('click', () => {
+      if (amountInput && available > 0) {
+        amountInput.value = formatCryptoAmount(available);
+        amountInput.focus();
+      }
+    });
+  }
+  updateSelectedCoinPanel();
+}
+
+// ─── HANDLE WITHDRAW ──────────────────────────────────────────────────────────
+function handleWithdraw() {
+  const address = document.getElementById('destAddress').value.trim();
+  const amount = parseFloat(document.getElementById('withdrawAmount').value);
+  const errorBox = document.getElementById('errorBox');
+
+  errorBox.classList.remove('show');
+
+  if (!address) {
+    errorBox.textContent = `Please enter a valid ${selectedCoin.name} destination address.`;
+    errorBox.classList.add('show');
+    return;
+  }
+  if (!amount || isNaN(amount) || amount <= 0) {
+    errorBox.textContent = `Please enter a valid amount to withdraw.`;
+    errorBox.classList.add('show');
+    return;
+  }
+  if (amount < parseFloat(selectedCoin.minWithdraw)) {
+    errorBox.textContent = `Minimum withdrawal amount is ${selectedCoin.minWithdraw} ${selectedCoin.symbol}.`;
+    errorBox.classList.add('show');
+    return;
+  }
+
+  // Show success toast
+  showToast('Withdrawal request submitted successfully!', 'success');
+
+  // Reset form
+  document.getElementById('destAddress').value = '';
+  document.getElementById('withdrawAmount').value = '';
+}
+
+// ─── FIREBASE ─────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyCC39kwMyETNvaHY-KezEKkOZV427s60vs",
+  authDomain: "adminpanel-55a5c.firebaseapp.com",
+  projectId: "adminpanel-55a5c",
+  storageBucket: "adminpanel-55a5c.firebasestorage.app",
+  messagingSenderId: "356063021629",
+  appId: "1:356063021629:web:d980b168b69b1de701b854"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let currentUserData = { balances: {} };
+
+const balanceKeyMap = {
+  BTC: 'bitcoin', ETH: 'ethereum', USDT: 'usdt', TRX: 'trx', BNB: 'bnb', USDC: 'usdc', SOL: 'sol', XRP: 'xrp', DOGE: 'doge', ADA: 'ada', MATIC: 'matic', DOT: 'dot', LINK: 'link', AVAX: 'avax', SHIB: 'shib'
+};
+
+function getBalanceKey(symbol) {
+  return balanceKeyMap[symbol] || symbol.toLowerCase();
+}
+
+function getAvailableBalance(symbol) {
+  const key = getBalanceKey(symbol);
+  return Number(currentUserData.balances?.[key] || 0);
+}
+
+function updateSelectedCoinPanel() {
+  if (!selectedCoin) return;
+  const available = getAvailableBalance(selectedCoin.symbol);
+  const maxLabel = document.getElementById('maxWithdrawAmount');
+  if (maxLabel) {
+    maxLabel.textContent = `${formatCryptoAmount(available)} ${selectedCoin.symbol}`;
+    maxLabel.classList.add('max-amount');
+  }
+}
+
+function loadCurrentUserData(user) {
+  return db.collection('users').doc(user.uid).get().then(doc => {
+    const data = doc.exists ? (doc.data() || {}) : {};
+    currentUserData = { balances: data.balances || {} };
+
+    const profileName = data.name || data.fullName || user.displayName || (user.email ? user.email.split('@')[0] : 'User');
+    document.getElementById('profileNavName').textContent = profileName;
+
+    const walletAmountEl = document.getElementById('walletAmount');
+    if (walletAmountEl) {
+      const walletValue = Number(data.balance || 0);
+      walletAmountEl.textContent = `$${walletValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    updateCoinListBalances();
+    updateSelectedCoinPanel();
+    return currentUserData;
+  }).catch(() => {
+    currentUserData = { balances: {} };
+    document.getElementById('profileNavName').textContent = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
+    updateCoinListBalances();
+    updateSelectedCoinPanel();
+    return currentUserData;
+  });
+}
+
+async function handleWithdraw() {
+  const address = document.getElementById('destAddress').value.trim();
+  const amount = parseFloat(document.getElementById('withdrawAmount').value);
+  const errorBox = document.getElementById('errorBox');
+
+  errorBox.classList.remove('show');
+
+  if (!address) {
+    errorBox.textContent = `Please enter a valid ${selectedCoin.name} destination address.`;
+    errorBox.classList.add('show');
+    return;
+  }
+  if (!amount || isNaN(amount) || amount <= 0) {
+    errorBox.textContent = `Please enter a valid amount to withdraw.`;
+    errorBox.classList.add('show');
+    return;
+  }
+  if (amount < parseFloat(selectedCoin.minWithdraw)) {
+    errorBox.textContent = `Minimum withdrawal amount is ${selectedCoin.minWithdraw} ${selectedCoin.symbol}.`;
+    errorBox.classList.add('show');
+    return;
+  }
+
+  const key = getBalanceKey(selectedCoin.symbol);
+  const available = getAvailableBalance(selectedCoin.symbol);
+  if (amount > available) {
+    errorBox.textContent = `Insufficient ${selectedCoin.symbol} balance. You have ${available.toFixed(8)} ${selectedCoin.symbol}.`;
+    errorBox.classList.add('show');
+    return;
+  }
+
+  const user = auth.currentUser;
+  if (!user) {
+    window.location.href = 'signin.html';
+    return;
+  }
+
+  try {
+    await db.runTransaction(async tx => {
+      const userRef = db.collection('users').doc(user.uid);
+      const doc = await tx.get(userRef);
+      if (!doc.exists) throw new Error('User account not found.');
+      const data = doc.data() || {};
+      const balances = Object.assign({}, data.balances || {});
+      balances[key] = Number((Number(balances[key] || 0) - amount).toFixed(8));
+      if (balances[key] < 0) throw new Error('Insufficient funds.');
+      const updatePayload = { balances };
+      if (key === 'bitcoin') updatePayload.balance = balances[key];
+      tx.update(userRef, updatePayload);
+      tx.set(userRef.collection('transactions').doc(), {
+        type: 'withdraw',
+        coinSymbol: selectedCoin.symbol,
+        amount,
+        address,
+        status: 'Completed',
+        hash: `withdraw-${Date.now()}`,
+        time: firebase.firestore.FieldValue.serverTimestamp(),
+        coinLogo: selectedCoin.logo,
+        coinColor: selectedCoin.color
+      });
+    });
+
+    showToast('Withdrawal request submitted successfully!', 'success');
+    document.getElementById('destAddress').value = '';
+    document.getElementById('withdrawAmount').value = '';
+    await loadCurrentUserData(user);
+  } catch (err) {
+    console.error('Withdraw failed:', err);
+    errorBox.textContent = err.message || 'Withdrawal failed. Please try again.';
+    errorBox.classList.add('show');
+  }
+}
+
+auth.onAuthStateChanged(user => {
+  if (!user) { window.location.href = 'signin.html'; return; }
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('profileNavName').textContent = name;
+  loadCurrentUserData(user);
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  auth.signOut().then(() => window.location.href = 'index.html');
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+buildCoinList();
+</script>
+
+<div id="gToast">
+  <svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span class="g-msg"></span>
+</div>
+<script>
+(function(){var _t=null;window.showToast=function(msg,kind,dur){kind=kind||'success';dur=dur||3500;var t=document.getElementById('gToast');if(!t)return;var ico=t.querySelector('.g-icon'),sp=t.querySelector('.g-msg');sp.textContent=msg;if(kind==='error'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';}else if(kind==='info'){ico.innerHTML='<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>';}else{ico.innerHTML='<polyline points="20 6 9 17 4 12"/>';}t.className='g-'+kind+' g-show';clearTimeout(_t);_t=setTimeout(function(){t.classList.remove('g-show');},dur);};})();</script>
+</body>
+</html>

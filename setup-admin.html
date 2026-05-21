@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Setup Admin Claim</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .card { background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 40px; max-width: 450px; width: 100%; }
+    h1 { font-size: 1.8rem; margin-bottom: 10px; color: #333; }
+    .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 30px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 6px; color: #333; font-weight: 600; }
+    input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; outline: none; }
+    input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    button { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .message { margin-top: 20px; padding: 12px; border-radius: 6px; text-align: center; font-size: 0.9rem; }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .info { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+    .note { background: #e7f3ff; padding: 12px; border-left: 4px solid #0066cc; margin-top: 20px; font-size: 0.85rem; color: #004085; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>⚙️ Setup Admin Claim</h1>
+    <p class="subtitle">Set up your admin account (one-time only)</p>
+
+    <div class="form-group">
+      <label for="adminUid">Admin User UID *</label>
+      <input id="adminUid" type="text" placeholder="Paste the admin user UID from Firebase Console" />
+      <small style="color: #999; display: block; margin-top: 4px;">Firebase Console → Authentication → Users → click user → copy UID</small>
+    </div>
+
+    <div class="form-group">
+      <label for="setupToken">Setup Token *</label>
+      <input id="setupToken" type="password" placeholder="Enter the setup token" />
+      <small style="color: #999; display: block; margin-top: 4px;">Default: crypto-site-admin-setup-2024</small>
+    </div>
+
+    <button id="setupBtn">Set Admin Claim</button>
+
+    <div id="message"></div>
+
+    <div class="note">
+      <strong>After setup:</strong>
+      <ul style="margin-left: 20px; margin-top: 8px;">
+        <li>The admin must sign out and sign back in</li>
+        <li>Then open admin.html to access the admin panel</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCC39kwMyETNvaHY-KezEKkOZV427s60vs",
+      authDomain: "adminpanel-55a5c.firebaseapp.com",
+      projectId: "adminpanel-55a5c",
+      storageBucket: "adminpanel-55a5c.firebasestorage.app",
+      messagingSenderId: "356063021629",
+      appId: "1:356063021629:web:d980b168b69b1de701b854"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const functions = firebase.functions();
+
+    const uidInput = document.getElementById('adminUid');
+    const tokenInput = document.getElementById('setupToken');
+    const btn = document.getElementById('setupBtn');
+    const msgEl = document.getElementById('message');
+
+    function showMessage(text, type) {
+      msgEl.textContent = text;
+      msgEl.className = 'message ' + type;
+    }
+
+    btn.addEventListener('click', async () => {
+      const uid = uidInput.value.trim();
+      const token = tokenInput.value.trim();
+
+      if(!uid || !token) {
+        showMessage('Please fill in both fields', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Setting up...';
+      showMessage('Calling Cloud Function...', 'info');
+
+      try {
+        const setupAdminClaim = functions.httpsCallable('setupAdminClaim');
+        const result = await setupAdminClaim({ uid, setupToken: token });
+        showMessage('✅ ' + result.data.message, 'success');
+        uidInput.value = '';
+        tokenInput.value = '';
+      } catch (error) {
+        const code = error.code || 'unknown';
+        const details = error.details ? ' — ' + JSON.stringify(error.details) : '';
+        showMessage(`❌ Error (${code}): ${error.message || 'Unknown error'}${details}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Set Admin Claim';
+      }
+    });
+  </script>
+</body>
+</html>
